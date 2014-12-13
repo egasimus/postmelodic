@@ -1,3 +1,8 @@
+env = Environment()
+env.Append(
+  CXXFLAGS=['/DEBUG'])
+
+
 Program(
 
     'bin/sample_player',

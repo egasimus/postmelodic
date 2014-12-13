@@ -1,5 +1,5 @@
 #include "osc.h"
 
-void osc_start_thread() {}
+void osc_start () {}
 
-void osc_end_thread() {}
+void osc_end () {}

@@ -8,17 +8,18 @@ int
 main (int    argc,
       char * argv [])
 {
-    const char * filename;
-
-    MSG("Hello :(");
+    const char  * filename;
+    jack_info_t * jack;
     
     reader_preload_file(filename);
 
-    jack_start_thread();
+    jack = jack_start();
 
-    osc_start_thread();
+    osc_start();
 
-    jack_end_thread();
+    sleep(5);
 
-    osc_end_thread();
+    jack_end(jack);
+
+    osc_end();
 }

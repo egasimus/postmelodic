@@ -1,8 +1,14 @@
 #ifndef _JACK_H_
 #define _JACK_H_
 
-void jack_start_thread ();
+#include <jack/jack.h>
 
-void jack_end_thread ();
+typedef struct JackInfo {
+    jack_client_t * client;
+} jack_info_t;
+
+jack_info_t * jack_start ();
+
+void jack_end ();
 
 #endif
