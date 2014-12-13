@@ -31,8 +31,22 @@ jack_info_t * jack_start () {
     // notify success
     if (status & JackServerStarted) MSG("JACK server started.");
 
+    // open outputs
+    jack->output_ports = calloc(1, sizeof(jack_port_t*)); 
+    jack->output_ports[0] = jack_port_register(jack->client,
+                                               "foo",
+                                               JACK_DEFAULT_AUDIO_TYPE,
+                                               JackPortIsOutput,
+                                               0);
+
     // set callbacks
     jack_set_process_callback(jack->client, process_callback, 0);
+
+    // activate client
+    if (jack_activate(jack->client)) {
+        FATAL("Can't activate client :(");
+        exit(1);
+    }
 
     // return results
     return jack;
@@ -43,5 +57,7 @@ jack_info_t * jack_start () {
 void jack_end (jack_info_t * jack) {
 
     jack_client_close(jack->client);
+
+    free(jack->output_ports);
 
 }
