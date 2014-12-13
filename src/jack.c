@@ -1,24 +1,62 @@
+#include "clip.h"
 #include "debug.h"
+#include "global.h"
 #include "jack.h"
 
 #include <stdlib.h>
 #include <string.h>
+#include <jack/jack.h>
 
 static int process_callback (jack_nframes_t   nframes,
                              void           * arg) {
+
+    global_state_t * context = (global_state_t*) arg;
+    audio_clip_t   * clip    = context->clips[0];
+    jack_nframes_t   i;
+
+    jack_default_audio_sample_t buf [clip->sfinfo->channels];
+
+    MSG("%s: %d channels, %d kHz, %d frames",
+        clip->filename,
+        clip->sfinfo->channels,
+        clip->sfinfo->samplerate,
+        clip->sfinfo->frames);
+
+    if (!clip->can_process) return 0;
+
+    context->output_buffers[0] = jack_port_get_buffer(
+        context->output_ports[0],
+        nframes);
+   
+    for (i = 0; i < nframes; i++) {
+        size_t read_count = jack_ringbuffer_read(
+            clip->ringbuf,
+            (void*)buf,
+            sizeof(jack_default_audio_sample_t) * clip->sfinfo->channels);
+        if (read_count == 0 && clip->read_done) {
+            clip->play_done = 1;
+            return 0;
+        }
+        clip->position += read_count / (
+            sizeof(jack_default_audio_sample_t) * clip->sfinfo->channels); 
+        context->output_buffers[0][i] = buf[0]; 
+    }
+ 
     return 0;
 }
 
-jack_info_t * jack_start () {
+void jack_start (global_state_t * context) {
 
-    jack_info_t   * jack   = calloc(1, sizeof(jack_info_t));
-    jack_status_t   status = 0;
+    jack_status_t status = 0;
 
     // try to connect
-    jack->client = jack_client_open("foo", JackNullOption | JackNoStartServer, &status);
+    context->jack_client = jack_client_open(
+        "foo",
+        JackNullOption | JackNoStartServer,
+        &status);
 
     // handle failure
-    if (jack->client == 0) {
+    if (context->jack_client == 0) {
         if (status & JackServerFailed) {
             FATAL("Unable to connect to JACK server.");
         } else {
@@ -31,31 +69,30 @@ jack_info_t * jack_start () {
     if (status & JackServerStarted) MSG("JACK server started.");
 
     // open outputs
-    jack->output_ports = calloc(1, sizeof(jack_port_t*)); 
-    jack->output_ports[0] = jack_port_register(jack->client,
-                                               "foo",
-                                               JACK_DEFAULT_AUDIO_TYPE,
-                                               JackPortIsOutput,
-                                               0);
+    context->output_ports    = calloc(1, sizeof(jack_port_t*)); 
+    context->output_buffers  = calloc(1, sizeof(jack_default_audio_sample_t*));
+    context->output_ports[0] = jack_port_register(context->jack_client,
+                                                  "foo",
+                                                  JACK_DEFAULT_AUDIO_TYPE,
+                                                  JackPortIsOutput,
+                                                  0);
 
     // set callbacks
-    jack_set_process_callback(jack->client, process_callback, 0);
+    jack_set_process_callback(context->jack_client, process_callback, context);
 
     // activate client
-    if (jack_activate(jack->client)) {
+    if (jack_activate(context->jack_client)) {
         FATAL("Can't activate client :(");
         exit(1);
     }
 
-    // return results
-    return jack;
-
 }
 
-void jack_end (jack_info_t * jack) {
+void jack_end (global_state_t * context) {
 
-    jack_client_close(jack->client);
+    jack_client_close(context->jack_client);
 
-    free(jack->output_ports);
+    free(context->output_ports);
+    free(context->output_buffers);
 
 }

@@ -5,4 +5,6 @@
 
 #define INITIAL_CLIP_SLOTS 32
 
+#define RINGBUFFER_SIZE (1<<16)
+
 #endif

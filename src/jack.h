@@ -3,13 +3,10 @@
 
 #include <jack/jack.h>
 
-typedef struct JackInfo {
-    jack_client_t *  client;
-    jack_port_t   ** output_ports;
-} jack_info_t;
+typedef struct GlobalState global_state_t;
 
-jack_info_t * jack_start ();
+void jack_start (global_state_t * context);
 
-void jack_end ();
+void jack_end (global_state_t * context);
 
 #endif
