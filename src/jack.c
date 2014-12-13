@@ -6,7 +6,6 @@
 
 static int process_callback (jack_nframes_t   nframes,
                              void           * arg) {
-    MSG("%d", nframes);
     return 0;
 }
 
@@ -50,7 +49,6 @@ jack_info_t * jack_start () {
 
     // return results
     return jack;
-
 
 }
 

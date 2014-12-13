@@ -3,4 +3,6 @@
 
 #define DEBUG 1
 
+#define INITIAL_CLIP_SLOTS 32
+
 #endif
