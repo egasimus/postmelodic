@@ -3,7 +3,11 @@ Program(
     'bin/sample_player',
 
     [
+        'src/debug.c',
+        'src/jack.c',
         'src/main.c',
+        'src/osc.c',
+        'src/reader.c',
     ],
 
     LIBS=[
