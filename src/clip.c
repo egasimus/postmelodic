@@ -5,6 +5,7 @@
 
 #include <jack/ringbuffer.h>
 #include <pthread.h>
+#include <sndfile.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -96,7 +97,8 @@ void clip_start(global_state_t * context,
                 clip_index_t     index,
                 jack_nframes_t   position) {
 
-    context->clips[0]->position   = position;
-    context->clips[0]->play_state = CLIP_PLAY;
+    sf_seek(context->clips[index]->sndfile, position, SEEK_SET);
+    context->clips[index]->position   = position;
+    context->clips[index]->play_state = CLIP_PLAY;
 
 }
