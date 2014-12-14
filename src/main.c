@@ -22,10 +22,12 @@ main (int    argc,
 
     osc_start(context);
 
+    clip_add(context, filename);
+
     printf("Press <ENTER> key to start playing...");
     getchar();
 
-    clip_add(context, filename);
+    clip_start(context, 0);
 
     while (1) usleep(10000);
 

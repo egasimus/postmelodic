@@ -43,26 +43,25 @@ static void * clip_read (void * arg) {
 
         jack_ringbuffer_write_advance(clip->ringbuf, read_frames * bytes_per_frame);
 
-        if (clip->state == INIT) clip->state = READING;
+        clip->read_state = CLIP_READ_STARTED;
 
         pthread_cond_wait(&clip->ready, &clip->lock);
 
     }
 
-    if (clip->state == INIT)           clip->state = ENDED;
-    else if (clip->state == READING)   clip->state = READY;
-    else if (clip->state == READ_PLAY) clip->state = PLAY;
+    clip->read_state = CLIP_READ_DONE;
 
 }
 
-void clip_add(global_state_t * context,
-              const char     * filename) {
+clip_index_t clip_add(global_state_t * context,
+                      const char     * filename) {
 
     audio_clip_t * clip = calloc(1, sizeof(audio_clip_t));
     
-    clip->state   = INIT;
-    clip->sfinfo  = calloc(1, sizeof(SF_INFO));
-    clip->sndfile = sf_open(filename, SFM_READ, clip->sfinfo);
+    clip->read_state = CLIP_READ_INIT;
+    clip->play_state = CLIP_STOP;
+    clip->sfinfo     = calloc(1, sizeof(SF_INFO));
+    clip->sndfile    = sf_open(filename, SFM_READ, clip->sfinfo);
 
     if (clip->sndfile == NULL) {
         FATAL("Could not open %s", filename);
@@ -71,12 +70,13 @@ void clip_add(global_state_t * context,
 
     clip->filename = filename;
 
-    MSG("%s: %d channels, %d kHz, %d frames, state %d",
+    MSG("%s: %d channels, %d kHz, %d frames, read %d, play %d",
         clip->filename,
         clip->sfinfo->channels,
         clip->sfinfo->samplerate,
         clip->sfinfo->frames,
-        clip->state);
+        clip->read_state,
+        clip->play_state);
 
     clip->ringbuf = jack_ringbuffer_create(
         sizeof(jack_default_audio_sample_t) * RINGBUFFER_SIZE);
@@ -88,5 +88,13 @@ void clip_add(global_state_t * context,
     pthread_cond_init(&clip->ready, NULL);
     pthread_create(&clip->thread, NULL, clip_read, clip);
 
-    /*pthread_join(clip->thread, NULL);*/
+    return 0;
+
+}
+
+void clip_start(global_state_t * context,
+                clip_index_t     index) {
+
+    context->clips[0]->play_state = CLIP_PLAY;
+
 }

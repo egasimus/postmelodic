@@ -14,20 +14,24 @@ static int process_callback (jack_nframes_t   nframes,
     global_state_t * context = (global_state_t*) arg;
     audio_clip_t   * clip    = context->clips[0];
     jack_nframes_t   i;
+    jack_nframes_t   j;
 
     if (context->clips[0] == NULL) return 0;
 
     jack_default_audio_sample_t readbuf [clip->sfinfo->channels];
 
-    RMSG("%s: %d channels, %d kHz, %d frames, state: %d %d",
+    RMSG("%s: %d channels, %d kHz, %d/%d frames, read: %d, play: %d",
          clip->filename,
          clip->sfinfo->channels,
          clip->sfinfo->samplerate,
+         clip->position,
          clip->sfinfo->frames,
-         clip->state,
-         clip->position);
+         clip->read_state,
+         clip->play_state);
 
-    if (clip->state == INIT) return 0;
+    if (clip->read_state == CLIP_READ_INIT) return 0;
+
+    if (clip->play_state == CLIP_STOP) return 0;
 
     context->output_buffers[0] = jack_port_get_buffer(
         context->output_ports[0],
@@ -36,8 +40,11 @@ static int process_callback (jack_nframes_t   nframes,
     for (i = 0; i < nframes; i++) {
         size_t read_count = jack_ringbuffer_read(
             clip->ringbuf, (void*)readbuf, FRAME_SIZE);
-        if (read_count == 0 && clip->state == PLAY) {
-            clip->state = ENDED;
+        if (read_count == 0 && clip->play_state == CLIP_PLAY) {
+            clip->play_state = CLIP_STOP;
+            for (j = 0; j < nframes; j++) {
+                context->output_buffers[0][j] = 0;
+            }
             return 0;
         }
         clip->position += read_count / FRAME_SIZE;
@@ -47,7 +54,7 @@ static int process_callback (jack_nframes_t   nframes,
     if (pthread_mutex_trylock(&clip->lock) == 0) {
         pthread_cond_signal(&clip->ready);
         pthread_mutex_unlock(&clip->lock);
-    } ;
+    };
  
     return 0;
 }

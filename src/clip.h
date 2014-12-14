@@ -9,13 +9,17 @@
 #include <sndfile.h>
 
 typedef enum {
-    INIT = 0,
-    READING,
-    READY,
-    READ_PLAY,
-    PLAY,
-    ENDED
-} clip_state_t;
+    CLIP_READ_INIT = 0,
+    CLIP_READ_STARTED,
+    CLIP_READ_DONE
+} clip_read_state_t;
+
+typedef enum {
+    CLIP_STOP = 0,
+    CLIP_PLAY,
+} clip_play_state_t;
+
+typedef int clip_index_t;
 
 typedef struct AudioClip {
     const char        * filename;
@@ -24,14 +28,18 @@ typedef struct AudioClip {
 
     jack_ringbuffer_t * ringbuf;
     jack_nframes_t      position;
-    clip_state_t        state;
+    clip_read_state_t   read_state;
+    clip_play_state_t   play_state;
 
     pthread_t           thread;
     pthread_mutex_t     lock;
     pthread_cond_t      ready;
 } audio_clip_t;
 
-void clip_add(global_state_t * context,
-              const char     * filename);
+clip_index_t clip_add(global_state_t * context,
+                      const char     * filename);
+
+void clip_start(global_state_t * context,
+                clip_index_t     index);
 
 #endif
