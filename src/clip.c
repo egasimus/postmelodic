@@ -58,6 +58,9 @@ void clip_add(global_state_t * context,
 
     audio_clip_t * clip = calloc(1, sizeof(audio_clip_t));
 
+    pthread_mutex_init(&clip->lock, NULL);
+    pthread_cond_init(&clip->ready, NULL);
+    
     clip->state   = INIT;
     clip->sfinfo  = calloc(1, sizeof(SF_INFO));
     clip->sndfile = sf_open(filename, SFM_READ, clip->sfinfo);
@@ -69,11 +72,12 @@ void clip_add(global_state_t * context,
 
     clip->filename = filename;
 
-    MSG("%s: %d channels, %d kHz, %d frames, state %s",
+    MSG("%s: %d channels, %d kHz, %d frames, state %d",
         clip->filename,
         clip->sfinfo->channels,
         clip->sfinfo->samplerate,
-        clip->sfinfo->frames);
+        clip->sfinfo->frames,
+        clip->state);
 
     clip->ringbuf = jack_ringbuffer_create(
         sizeof(jack_default_audio_sample_t) * RINGBUFFER_SIZE);
@@ -83,4 +87,5 @@ void clip_add(global_state_t * context,
 
     pthread_create(&clip->thread, NULL, clip_read, clip);
 
+    /*pthread_join(clip->thread, NULL);*/
 }

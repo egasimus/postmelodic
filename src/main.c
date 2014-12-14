@@ -18,13 +18,13 @@ main (int    argc,
     context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
     context->n_clips = 0;
     
-    clip_add(context, filename);
-
     jack_start(context);
+
+    clip_add(context, filename);
 
     osc_start();
 
-    sleep(10);
+    while (1) usleep(10000);
 
     jack_end(context);
 
