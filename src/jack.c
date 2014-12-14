@@ -20,6 +20,7 @@ static int process_callback (jack_nframes_t   nframes,
 
     jack_default_audio_sample_t readbuf [clip->sfinfo->channels];
 
+    // log state
     RMSG("%s: %d channels, %d kHz, %d/%d frames, read: %d, play: %d",
          clip->filename,
          clip->sfinfo->channels,
@@ -29,17 +30,24 @@ static int process_callback (jack_nframes_t   nframes,
          clip->read_state,
          clip->play_state);
 
-    if (clip->read_state == CLIP_READ_INIT) return 0;
+    // do nothing if the clip is stopped or not ready
+    if (clip->read_state == CLIP_READ_INIT || clip->play_state == CLIP_STOP)
+        return 0;
 
-    if (clip->play_state == CLIP_STOP) return 0;
-
+    // get jack output buffer
+    // TODO: no need to store in context
     context->output_buffers[0] = jack_port_get_buffer(
         context->output_ports[0],
         nframes);
-   
+
+    // read each frame off the ringbuffer,
+    // and put it into the output buffer.
     for (i = 0; i < nframes; i++) {
         size_t read_count = jack_ringbuffer_read(
             clip->ringbuf, (void*)readbuf, FRAME_SIZE);
+
+        // if there was nothing to read,
+        // stop the clip and clear the buffer.
         if (read_count == 0 && clip->play_state == CLIP_PLAY) {
             clip->play_state = CLIP_STOP;
             for (j = 0; j < nframes; j++) {
@@ -47,10 +55,15 @@ static int process_callback (jack_nframes_t   nframes,
             }
             return 0;
         }
+
+        // advance playback position
         clip->position += read_count / FRAME_SIZE;
+
+        // actually set output buffer
         context->output_buffers[0][i] = readbuf[0]; 
     }
 
+    // tell the reader thread to continue reading
     if (pthread_mutex_trylock(&clip->lock) == 0) {
         pthread_cond_signal(&clip->ready);
         pthread_mutex_unlock(&clip->lock);
