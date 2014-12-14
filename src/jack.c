@@ -3,6 +3,7 @@
 #include "global.h"
 #include "jack.h"
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <jack/jack.h>
@@ -42,6 +43,11 @@ static int process_callback (jack_nframes_t   nframes,
         clip->position += read_count / FRAME_SIZE;
         context->output_buffers[0][i] = readbuf[0]; 
     }
+
+    if (pthread_mutex_trylock(&clip->lock) == 0) {
+        pthread_cond_signal(&clip->ready);
+        pthread_mutex_unlock(&clip->lock);
+    } ;
  
     return 0;
 }
