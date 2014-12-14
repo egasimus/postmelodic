@@ -1,9 +1,9 @@
 #ifndef _JACK_H_
 #define _JACK_H_
 
-#include <jack/jack.h>
+#include "global.h"
 
-typedef struct GlobalState global_state_t;
+#include <jack/jack.h>
 
 void jack_start (global_state_t * context);
 

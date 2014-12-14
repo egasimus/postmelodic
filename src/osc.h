@@ -1,8 +1,10 @@
 #ifndef _OSC_H_
 #define _OSC_H_
 
-void osc_start ();
+#include "global.h"
 
-void osc_end ();
+void osc_start (global_state_t * context);
+
+void osc_end (global_state_t * context);
 
 #endif

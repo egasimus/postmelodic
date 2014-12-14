@@ -25,13 +25,13 @@ main (int    argc,
 
     clip_add(context, filename);
 
-    osc_start();
+    osc_start(context);
 
     while (1) usleep(10000);
 
     jack_end(context);
 
-    osc_end();
+    osc_end(context);
 
     free(context->clips);
     free(context);

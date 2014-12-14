@@ -1,7 +1,9 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
-#include "clip.h"
+#include <jack/jack.h>
+
+typedef struct AudioClip audio_clip_t;
 
 typedef struct GlobalState {
     audio_clip_t ** clips;

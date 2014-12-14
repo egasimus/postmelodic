@@ -1,12 +1,12 @@
 #ifndef _CLIP_H_
 #define _CLIP_H_
 
+#include "global.h"
+
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
 #include <pthread.h>
 #include <sndfile.h>
-
-typedef struct GlobalState global_state_t;
 
 typedef enum {
     INIT = 0,

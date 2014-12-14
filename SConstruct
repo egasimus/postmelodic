@@ -29,7 +29,7 @@ Program(
 
     'bin/jackplay',
 
-    'src/jackplay.c',
+    'misc/jackplay.c',
 
     LIBS=[
         'm',
