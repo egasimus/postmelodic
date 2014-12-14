@@ -14,14 +14,17 @@ static int process_callback (jack_nframes_t   nframes,
     audio_clip_t   * clip    = context->clips[0];
     jack_nframes_t   i;
 
-    jack_default_audio_sample_t buf [clip->sfinfo->channels];
+    if (context->clips[0] == NULL) return 0;
 
-    MSG("%s: %d channels, %d kHz, %d frames, state: %d",
+    jack_default_audio_sample_t readbuf [clip->sfinfo->channels];
+
+    MSG("%s: %d channels, %d kHz, %d frames, state: %d %d",
         clip->filename,
         clip->sfinfo->channels,
         clip->sfinfo->samplerate,
         clip->sfinfo->frames,
-        clip->state);
+        clip->state,
+        clip->position);
 
     if (clip->state == INIT) return 0;
 
@@ -31,13 +34,13 @@ static int process_callback (jack_nframes_t   nframes,
    
     for (i = 0; i < nframes; i++) {
         size_t read_count = jack_ringbuffer_read(
-            clip->ringbuf, (void*)buf, FRAME_SIZE);
+            clip->ringbuf, (void*)readbuf, FRAME_SIZE);
         if (read_count == 0 && clip->state == PLAY) {
             clip->state = ENDED;
             return 0;
         }
         clip->position += read_count / FRAME_SIZE;
-        context->output_buffers[0][i] = buf[0]; 
+        context->output_buffers[0][i] = readbuf[0]; 
     }
  
     return 0;

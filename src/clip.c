@@ -33,7 +33,9 @@ static void * clip_read (void * arg) {
             buf_avail = write_vector[0].len / bytes_per_frame;
 
             read_frames = sf_readf_float(
-                clip->sndfile, (float*) write_vector[0].buf, buf_avail);
+                clip->sndfile,
+                (float*) write_vector[0].buf,
+                buf_avail);
 
         }
 
