@@ -24,7 +24,7 @@ main (int    argc,
 
     osc_start();
 
-    sleep(3);
+    sleep(10);
 
     jack_end(context);
 

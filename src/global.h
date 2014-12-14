@@ -12,4 +12,7 @@ typedef struct GlobalState {
     jack_default_audio_sample_t ** output_buffers;
 } global_state_t;
 
+#define SAMPLE_SIZE (sizeof (jack_default_audio_sample_t))
+#define FRAME_SIZE  (sizeof(jack_default_audio_sample_t) * clip->sfinfo->channels)
+
 #endif
