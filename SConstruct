@@ -16,9 +16,10 @@ Program(
     ],
 
     LIBS=[
+        'jack',
+        'lo',
         'm',
         'pthread',
-        'jack',
         'sndfile',
     ]
 

@@ -1,4 +1,10 @@
+#ifndef _DEBUG_H_
+#define _DEBUG_H_
+
 #include "config.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef __MODULE__
 #ifdef PACKAGE
@@ -30,7 +36,7 @@ warnf(warning_t    level,
 #ifdef DEBUG
   #define DMSG(  fmt,  args... ) warnf( W_MESSAGE, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args )
   #define DWARN( fmt,  args... ) warnf( W_WARNING, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args )
-  #define ASSERT(pred, fmt, args... ) do { if ( ! (pred) ) { warnf( W_FATAL, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args ); abort(); } } while ( 0 )
+  #define ASSERT(pred, fmt, args... ) do { if ( ! (pred) ) { warnf( W_FATAL, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args ); exit(1); } } while ( 0 )
 #else
   #define DMSG(  fmt,  args... )
   #define DWARN( fmt,  args... )
@@ -39,4 +45,8 @@ warnf(warning_t    level,
 
 #define MSG(  fmt, args... )  warnf( W_MESSAGE, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args )
 #define WARN( fmt, args... )  warnf( W_WARNING, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args )
-#define FATAL(fmt, args... ) (warnf( W_FATAL,   __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args ), abort())
+#define FATAL(fmt, args... ) (warnf( W_FATAL,   __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args ), exit(1))
+
+#define RMSG( fmt, args... ) ( MSG(fmt, ## args), fprintf(stderr, "\033[1A\r") )
+
+#endif

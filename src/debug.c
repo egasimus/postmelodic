@@ -45,4 +45,3 @@ void warnf(warning_t    level,
     }
 
 }
-

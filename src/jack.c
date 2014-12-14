@@ -19,13 +19,13 @@ static int process_callback (jack_nframes_t   nframes,
 
     jack_default_audio_sample_t readbuf [clip->sfinfo->channels];
 
-    MSG("%s: %d channels, %d kHz, %d frames, state: %d %d",
-        clip->filename,
-        clip->sfinfo->channels,
-        clip->sfinfo->samplerate,
-        clip->sfinfo->frames,
-        clip->state,
-        clip->position);
+    RMSG("%s: %d channels, %d kHz, %d frames, state: %d %d",
+         clip->filename,
+         clip->sfinfo->channels,
+         clip->sfinfo->samplerate,
+         clip->sfinfo->frames,
+         clip->state,
+         clip->position);
 
     if (clip->state == INIT) return 0;
 
