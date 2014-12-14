@@ -11,15 +11,40 @@
 static int process_callback (jack_nframes_t   nframes,
                              void           * arg) {
 
-    global_state_t * context = (global_state_t*) arg;
-    audio_clip_t   * clip    = context->clips[0];
-    jack_nframes_t   i;
-    jack_nframes_t   j;
+    global_state_t               * context = (global_state_t*) arg;
+    audio_clip_t                 * clip    = context->clips[0];
 
-    if (context->clips[0] == NULL) return 0;
+    jack_default_audio_sample_t  * readbuf;
+    jack_default_audio_sample_t ** output_buffers =
+        calloc(1, sizeof(jack_default_audio_sample_t*));
 
-    jack_default_audio_sample_t    readbuf [clip->sfinfo->channels];
-    jack_default_audio_sample_t ** output_buffers = calloc(1, sizeof(jack_default_audio_sample_t*));
+    jack_nframes_t                 i;
+    jack_nframes_t                 j;
+
+
+    // get output buffer
+    output_buffers[0] = jack_port_get_buffer(
+        context->output_ports[0],
+        nframes);
+
+    // clear output buffer so output defaults to silence,
+    // rather than looping any previous data in the buffer
+    for (j = 0; j < nframes; j++) {
+        output_buffers[0][j] = 0;
+    }
+
+    // do nothing if the clip does not exist,
+    // if it is stopped, or if it is not ready
+    if (clip == NULL ||
+        clip->read_state == CLIP_READ_INIT ||
+        clip->play_state == CLIP_STOP) return 0;
+
+    // if there is in fact a clip, allocate a read buffer
+    // for copying data off the clip's ringbuffer.
+    readbuf = calloc(
+        clip->sfinfo->channels,
+        sizeof(jack_default_audio_sample_t*));
+
     // log state
     RMSG("%s: %d channels, %d kHz, %d/%d frames, read: %d, play: %d",
          clip->filename,
@@ -29,21 +54,6 @@ static int process_callback (jack_nframes_t   nframes,
          clip->sfinfo->frames,
          clip->read_state,
          clip->play_state);
-
-    // get jack output buffer
-    // TODO: no need to store in context
-    output_buffers[0] = jack_port_get_buffer(
-        context->output_ports[0],
-        nframes);
-
-    // clear output buffer;
-    for (j = 0; j < nframes; j++) {
-        output_buffers[0][j] = 0;
-    }
-
-    // do nothing if the clip is stopped or not ready
-    if (clip->read_state == CLIP_READ_INIT || clip->play_state == CLIP_STOP)
-        return 0;
 
     // read each frame off the ringbuffer,
     // and put it into the output buffer.
