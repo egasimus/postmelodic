@@ -40,6 +40,7 @@ clip_index_t clip_add(global_state_t * context,
                       const char     * filename);
 
 void clip_start(global_state_t * context,
-                clip_index_t     index);
+                clip_index_t     index,
+                jack_nframes_t   position);
 
 #endif

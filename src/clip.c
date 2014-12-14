@@ -93,8 +93,10 @@ clip_index_t clip_add(global_state_t * context,
 }
 
 void clip_start(global_state_t * context,
-                clip_index_t     index) {
+                clip_index_t     index,
+                jack_nframes_t   position) {
 
+    context->clips[0]->position   = position;
     context->clips[0]->play_state = CLIP_PLAY;
 
 }

@@ -27,7 +27,7 @@ main (int    argc,
     printf("Press <ENTER> key to start playing...");
     getchar();
 
-    clip_start(context, 0);
+    /*clip_start(context, 0);*/
 
     while (1) usleep(10000);
 
