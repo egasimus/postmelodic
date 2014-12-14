@@ -30,15 +30,20 @@ static int process_callback (jack_nframes_t   nframes,
          clip->read_state,
          clip->play_state);
 
-    // do nothing if the clip is stopped or not ready
-    if (clip->read_state == CLIP_READ_INIT || clip->play_state == CLIP_STOP)
-        return 0;
-
     // get jack output buffer
     // TODO: no need to store in context
     context->output_buffers[0] = jack_port_get_buffer(
         context->output_ports[0],
         nframes);
+
+    // clear output buffer;
+    for (j = 0; j < nframes; j++) {
+        context->output_buffers[0][j] = 0;
+    }
+
+    // do nothing if the clip is stopped or not ready
+    if (clip->read_state == CLIP_READ_INIT || clip->play_state == CLIP_STOP)
+        return 0;
 
     // read each frame off the ringbuffer,
     // and put it into the output buffer.
@@ -46,13 +51,9 @@ static int process_callback (jack_nframes_t   nframes,
         size_t read_count = jack_ringbuffer_read(
             clip->ringbuf, (void*)readbuf, FRAME_SIZE);
 
-        // if there was nothing to read,
-        // stop the clip and clear the buffer.
+        // if there was nothing left to read, stop the clip.
         if (read_count == 0 && clip->play_state == CLIP_PLAY) {
             clip->play_state = CLIP_STOP;
-            for (j = 0; j < nframes; j++) {
-                context->output_buffers[0][j] = 0;
-            }
             return 0;
         }
 
