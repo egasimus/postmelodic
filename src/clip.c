@@ -10,7 +10,7 @@
 
 static void * clip_read (void * arg) {
 
-    audio_clip_t * clip = (audio_clip_t*) clip;
+    audio_clip_t * clip = (audio_clip_t*) arg;
 
     sf_count_t             buf_avail;
     sf_count_t             read_frames;
@@ -57,9 +57,6 @@ void clip_add(global_state_t * context,
               const char     * filename) {
 
     audio_clip_t * clip = calloc(1, sizeof(audio_clip_t));
-
-    pthread_mutex_init(&clip->lock, NULL);
-    pthread_cond_init(&clip->ready, NULL);
     
     clip->state   = INIT;
     clip->sfinfo  = calloc(1, sizeof(SF_INFO));
@@ -85,6 +82,8 @@ void clip_add(global_state_t * context,
 
     context->clips[0] = clip;
 
+    pthread_mutex_init(&clip->lock, NULL);
+    pthread_cond_init(&clip->ready, NULL);
     pthread_create(&clip->thread, NULL, clip_read, clip);
 
     /*pthread_join(clip->thread, NULL);*/
