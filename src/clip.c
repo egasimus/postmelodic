@@ -79,12 +79,15 @@ clip_index_t clip_add(global_state_t * context,
         clip->read_state,
         clip->play_state);
 
+    // initialize ringbuffer
     clip->ringbuf = jack_ringbuffer_create(
         sizeof(jack_default_audio_sample_t) * RINGBUFFER_SIZE);
     memset(clip->ringbuf->buf, 0, clip->ringbuf->size);
 
+    // add clip to global list of clips
     context->clips[0] = clip;
 
+    // initialize reader thread
     pthread_mutex_init(&clip->lock, NULL);
     pthread_cond_init(&clip->ready, NULL);
     pthread_create(&clip->thread, NULL, clip_read, clip);
@@ -98,6 +101,7 @@ void clip_start(global_state_t * context,
                 jack_nframes_t   position) {
 
     sf_seek(context->clips[index]->sndfile, position, SEEK_SET);
+    context->clips[index]->read_state = CLIP_READ_STARTED;
     context->clips[index]->position   = position;
     context->clips[index]->play_state = CLIP_PLAY;
 

@@ -47,6 +47,6 @@ warnf(warning_t    level,
 #define WARN( fmt, args... )  warnf( W_WARNING, __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args )
 #define FATAL(fmt, args... ) (warnf( W_FATAL,   __MODULE__, __FILE__, __FUNCTION__, __LINE__, fmt, ## args ), exit(1))
 
-#define RMSG( fmt, args... ) ( MSG(fmt, ## args), fprintf(stderr, "\033[1A\r") )
+#define RMSG( fmt, args... ) ( fprintf(stderr, "\033[1A\033[2K\r"), MSG(fmt, ## args) )
 
 #endif

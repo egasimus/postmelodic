@@ -8,14 +8,13 @@ typedef struct AudioClip audio_clip_t;
 
 typedef struct GlobalState {
 
-    audio_clip_t                ** clips;
-    unsigned int                   n_clips;
+    audio_clip_t     ** clips;
+    unsigned int        n_clips;
 
-    jack_client_t               *  jack_client;
-    jack_port_t                 ** output_ports;
-    jack_default_audio_sample_t ** output_buffers;
+    jack_client_t     * jack_client;
+    jack_port_t      ** output_ports;
 
-    lo_server_thread               osc_server;
+    lo_server_thread    osc_server;
     
 } global_state_t;
 

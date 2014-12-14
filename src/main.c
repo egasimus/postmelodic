@@ -24,8 +24,8 @@ main (int    argc,
 
     clip_add(context, filename);
 
-    printf("Press <ENTER> key to start playing...");
-    getchar();
+    /*printf("Press <ENTER> key to start playing...");*/
+    /*getchar();*/
 
     /*clip_start(context, 0);*/
 

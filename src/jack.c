@@ -18,8 +18,8 @@ static int process_callback (jack_nframes_t   nframes,
 
     if (context->clips[0] == NULL) return 0;
 
-    jack_default_audio_sample_t readbuf [clip->sfinfo->channels];
-
+    jack_default_audio_sample_t    readbuf [clip->sfinfo->channels];
+    jack_default_audio_sample_t ** output_buffers = calloc(1, sizeof(jack_default_audio_sample_t*));
     // log state
     RMSG("%s: %d channels, %d kHz, %d/%d frames, read: %d, play: %d",
          clip->filename,
@@ -32,13 +32,13 @@ static int process_callback (jack_nframes_t   nframes,
 
     // get jack output buffer
     // TODO: no need to store in context
-    context->output_buffers[0] = jack_port_get_buffer(
+    output_buffers[0] = jack_port_get_buffer(
         context->output_ports[0],
         nframes);
 
     // clear output buffer;
     for (j = 0; j < nframes; j++) {
-        context->output_buffers[0][j] = 0;
+        output_buffers[0][j] = 0;
     }
 
     // do nothing if the clip is stopped or not ready
@@ -61,10 +61,10 @@ static int process_callback (jack_nframes_t   nframes,
         clip->position += read_count / FRAME_SIZE;
 
         // actually set output buffer
-        context->output_buffers[0][i] = readbuf[0]; 
+        output_buffers[0][i] = readbuf[0]; 
     }
 
-    // tell the reader thread to continue reading
+    // tell the reader thread to read next chunk into ringbuffer
     if (pthread_mutex_trylock(&clip->lock) == 0) {
         pthread_cond_signal(&clip->ready);
         pthread_mutex_unlock(&clip->lock);
@@ -98,7 +98,6 @@ void jack_start (global_state_t * context) {
 
     // open outputs
     context->output_ports    = calloc(1, sizeof(jack_port_t*)); 
-    context->output_buffers  = calloc(1, sizeof(jack_default_audio_sample_t*));
     context->output_ports[0] = jack_port_register(context->jack_client,
                                                   "foo",
                                                   JACK_DEFAULT_AUDIO_TYPE,
@@ -121,6 +120,5 @@ void jack_end (global_state_t * context) {
     jack_client_close(context->jack_client);
 
     free(context->output_ports);
-    free(context->output_buffers);
 
 }
