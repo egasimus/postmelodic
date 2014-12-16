@@ -28,6 +28,7 @@ static void * clip_read (void * arg) {
     while (1) {
 
         // populate any new cue buffers
+        // TODO: move to separate thread
 
         for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
             cue = clip->cues[i];
@@ -86,9 +87,8 @@ void clip_cue_add(audio_clip_t * clip,
 void clip_cue_jump(audio_clip_t * clip,
                    cue_index_t    index) {
 
-    /*clip->cue      = index;*/
-    /*clip->ringbuf  = clip->cues[index]->buffer;*/
     clip->position = clip->cues[index]->position;
+    clip->cue      = index;
 
 }
 
@@ -120,7 +120,6 @@ clip_index_t clip_add(global_state_t * context,
     clip->cue  = -1;
     clip->cues = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
     clip_cue_add(clip, 0, 0);
-    /*clip_cue_jump(clip, 0);*/
 
     // initialize ringbuffer
     clip->ringbuf = jack_ringbuffer_create(BUFFER_SIZE);
@@ -144,6 +143,7 @@ void clip_start(global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
 
+    clip->cue        = cue_index;
     clip->play_state = CLIP_PLAY;
 
     /*if (clip->play_state == CLIP_PLAY) {*/
