@@ -14,6 +14,7 @@ static void * clip_read (void * arg) {
     audio_clip_t * clip = (audio_clip_t*) arg;
     cue_index_t    i;
     cue_point_t  * cue;
+    int            cued = 0;
 
     sf_count_t             buf_avail;
     sf_count_t             read_frames;
@@ -48,11 +49,29 @@ static void * clip_read (void * arg) {
 
         }
 
-        // read next chunk of ringbuffer
+        // read next chunk of data into the ringbuffer.
+        // if the jack process_callback is currently reading
+        // from a cuepoint buffer, preload the data that comes
+        // after its end into the ringbuffer.
+        if (clip->cue > -1) {
+            if (cued == 0) {
 
-        read_frames = 0;
+                cued = 1;
+
+                jack_ringbuffer_reset(clip->ringbuf);
+
+                cue = clip->cues[clip->cue];
+                sf_seek(
+                    clip->sndfile,
+                    cue->position + cue->length,
+                    SEEK_SET);
+
+            }
+        } else cued = 0;
 
         jack_ringbuffer_get_write_vector(clip->ringbuf, write_vector);
+
+        read_frames = 0;
 
         if (write_vector[0].len) {
 
@@ -65,19 +84,19 @@ static void * clip_read (void * arg) {
 
         }
 
-        if (read_frames == 0) {
-
-            clip->read_state = CLIP_READ_DONE;
-
-        } else {
+        if (read_frames > 0) {
 
             jack_ringbuffer_write_advance(clip->ringbuf, read_frames * bytes_per_frame);
 
             clip->read_state = CLIP_READ_STARTED;
 
-            pthread_cond_wait(&clip->ready, &clip->lock);
+        } else {
+
+            clip->read_state = CLIP_READ_DONE;
 
         }
+
+        pthread_cond_wait(&clip->ready, &clip->lock);
 
     }
 
