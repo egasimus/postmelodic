@@ -24,8 +24,8 @@ typedef int cue_index_t;
 typedef int clip_index_t;
 
 typedef struct CuePoint {
-    jack_nframes_t      position;
-    jack_ringbuffer_t * buffer;
+    jack_nframes_t                position;
+    jack_default_audio_sample_t * buffer;
 } cue_point_t;
 
 typedef struct AudioClip {
@@ -35,7 +35,6 @@ typedef struct AudioClip {
 
     cue_point_t      ** cues;
     cue_index_t         cue;
-    cue_index_t         next_cue;
 
     jack_ringbuffer_t * ringbuf;
     jack_nframes_t      position;

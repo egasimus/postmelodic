@@ -12,6 +12,8 @@
 static void * clip_read (void * arg) {
 
     audio_clip_t * clip = (audio_clip_t*) arg;
+    cue_index_t    i;
+    cue_point_t  * cue;
 
     sf_count_t             buf_avail;
     sf_count_t             read_frames;
@@ -24,6 +26,20 @@ static void * clip_read (void * arg) {
     pthread_mutex_lock(&clip->lock);
 
     while (1) {
+
+        // populate any new cue buffers
+
+        for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
+            cue = clip->cues[i];
+            if (cue != NULL && cue->buffer == NULL) {
+                cue->buffer = calloc(1, BUFFER_SIZE);
+                sf_seek(clip->sndfile, cue->position, SEEK_SET);
+                read_frames = sf_readf_float(clip->sndfile, cue->buffer, BUFFER_FRAMES);
+                sf_seek(clip->sndfile, -read_frames, SEEK_CUR);
+            }
+        }
+
+        // read next chunk of ringbuffer
 
         jack_ringbuffer_get_write_vector(clip->ringbuf, write_vector);
 
@@ -61,10 +77,7 @@ void clip_cue_add(audio_clip_t * clip,
     cue_point_t * cue = calloc(1, sizeof(cue_point_t));
 
     cue->position = position;
-    cue->buffer   = jack_ringbuffer_create(
-            sizeof(jack_default_audio_sample_t) * RINGBUFFER_SIZE);
-
-    memset(cue->buffer->buf, 0, cue->buffer->size);
+    cue->buffer   = NULL;
 
     clip->cues[index] = cue;
 
@@ -73,8 +86,8 @@ void clip_cue_add(audio_clip_t * clip,
 void clip_cue_jump(audio_clip_t * clip,
                    cue_index_t    index) {
 
-    clip->cue      = index;
-    clip->ringbuf  = clip->cues[index]->buffer;
+    /*clip->cue      = index;*/
+    /*clip->ringbuf  = clip->cues[index]->buffer;*/
     clip->position = clip->cues[index]->position;
 
 }
@@ -103,11 +116,15 @@ clip_index_t clip_add(global_state_t * context,
         clip->read_state,
         clip->play_state);
 
-    // initialize cues and ringbuffer
-    clip->next_cue = -1;
-    clip->cues     = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
+    // initialize cues
+    clip->cue  = -1;
+    clip->cues = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
     clip_cue_add(clip, 0, 0);
-    clip_cue_jump(clip, 0);
+    /*clip_cue_jump(clip, 0);*/
+
+    // initialize ringbuffer
+    clip->ringbuf = jack_ringbuffer_create(BUFFER_SIZE);
+    memset(clip->ringbuf->buf, 0, clip->ringbuf->size);
 
     // initialize reader thread
     pthread_mutex_init(&clip->lock, NULL);
@@ -127,11 +144,13 @@ void clip_start(global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
 
-    if (clip->play_state == CLIP_PLAY) {
-        clip->next_cue = cue_index;
-    } else {
-        clip_cue_jump(clip, cue_index);
-        clip->play_state = CLIP_PLAY;
-    }
+    clip->play_state = CLIP_PLAY;
+
+    /*if (clip->play_state == CLIP_PLAY) {*/
+        /*clip->next_cue = cue_index;*/
+    /*} else {*/
+        /*clip_cue_jump(clip, cue_index);*/
+        /*clip->play_state = CLIP_PLAY;*/
+    /*}*/
 
 }
