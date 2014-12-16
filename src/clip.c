@@ -65,17 +65,22 @@ static void * clip_read (void * arg) {
 
         }
 
-        if (read_frames == 0) break;
+        if (read_frames == 0) {
 
-        jack_ringbuffer_write_advance(clip->ringbuf, read_frames * bytes_per_frame);
+            clip->read_state = CLIP_READ_DONE;
 
-        clip->read_state = CLIP_READ_STARTED;
+        } else {
 
-        pthread_cond_wait(&clip->ready, &clip->lock);
+            jack_ringbuffer_write_advance(clip->ringbuf, read_frames * bytes_per_frame);
+
+            clip->read_state = CLIP_READ_STARTED;
+
+            pthread_cond_wait(&clip->ready, &clip->lock);
+
+        }
 
     }
 
-    clip->read_state = CLIP_READ_DONE;
 
 }
 

@@ -37,7 +37,7 @@ static int process_callback (jack_nframes_t   nframes,
         clip->read_state == CLIP_READ_INIT ||
         clip->play_state == CLIP_STOP) return 0;
 
-    // okay, so there's a playing clip. log state
+    // okay, so there's a clip playing. log state
     // TODO: remove this io call from callback
     MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
          clip->filename,
@@ -50,49 +50,51 @@ static int process_callback (jack_nframes_t   nframes,
          clip->cue,
          (clip->cue > -1) ? "cued" : "ring");
 
+    // fill output buffer with frames
+    // from either cue or ring buffer
     for (i = 0; i < nframes; i++) {
 
         if (clip->cue > -1) {
 
             cue_point_t * cue = clip->cues[clip->cue];
 
+            // write frame from cue buffer into output buffer
             output_buffers[0][i] =
                 cue->buffer[(clip->position - cue->position) * clip->sfinfo->channels];
 
+            // advance playback position
             clip->position++;
 
+            // if we've passed the end of the cue buffer,
+            // return to reading the ringbuffer instead.
             if (clip->position > cue->position + cue->length) {
                 clip->cue = -1;
             }
 
         } else {
 
-            // allocate empty read buffer for
-            // copying data off the ringbuffer.
+            // allocate intermediary read buffer
             readbuf = calloc(
                 clip->sfinfo->channels,
                 sizeof(jack_default_audio_sample_t*));
 
-            // read each frame off the ringbuffer,
-            // and put it into the output buffer.
-            for (i = 0; i < nframes; i++) {
-                size_t read_count = jack_ringbuffer_read(
-                    clip->ringbuf,
-                    (void*)readbuf,
-                    FRAME_SIZE);
+            // read one frame's worth of data from ringbuffer
+            size_t read_count = jack_ringbuffer_read(
+                clip->ringbuf,
+                (void*)readbuf,
+                FRAME_SIZE);
 
-                // if there was nothing left to read, stop the clip.
-                if (read_count == 0 && clip->play_state == CLIP_PLAY) {
-                    clip->play_state = CLIP_STOP;
-                    return 0;
-                }
-
-                // advance playback position
-                clip->position += read_count / FRAME_SIZE;
-
-                // actually set output buffer
-                output_buffers[0][i] = readbuf[0]; 
+            // if there was nothing left to read, stop the clip.
+            if (read_count == 0 && clip->play_state == CLIP_PLAY) {
+                clip->play_state = CLIP_STOP;
+                return 0;
             }
+
+            // advance playback position
+            clip->position += read_count / FRAME_SIZE;
+
+            // write frame into output buffer
+            output_buffers[0][i] = readbuf[0]; 
 
         }
 
