@@ -180,11 +180,4 @@ void clip_start(global_state_t * context,
     clip_cue_jump(clip, cue_index);
     clip->play_state = CLIP_PLAY;
 
-    /*if (clip->play_state == CLIP_PLAY) {*/
-        /*clip->next_cue = cue_index;*/
-    /*} else {*/
-        /*clip_cue_jump(clip, cue_index);*/
-        /*clip->play_state = CLIP_PLAY;*/
-    /*}*/
-
 }
