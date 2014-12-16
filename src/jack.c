@@ -39,7 +39,7 @@ static int process_callback (jack_nframes_t   nframes,
 
     // okay, so there's a playing clip. log state
     // TODO: remove this io call from callback
-    RMSG("%s: %d channels, %d kHz, %d/%d frames, read: %d, play: %d, cue: %d",
+    MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
          clip->filename,
          clip->sfinfo->channels,
          clip->sfinfo->samplerate,
@@ -47,49 +47,59 @@ static int process_callback (jack_nframes_t   nframes,
          clip->sfinfo->frames,
          clip->read_state,
          clip->play_state,
-         clip->cue);
+         clip->cue,
+         (clip->cue > -1) ? "cued" : "ring");
 
-    if (clip->cue) {
+    for (i = 0; i < nframes; i++) {
 
-        // copy frames from cue buffer to output buffer
-        for (i = 0; i < nframes; i++) {
+        if (clip->cue > -1) {
+
             cue_point_t * cue = clip->cues[clip->cue];
+
             output_buffers[0][i] =
                 cue->buffer[(clip->position - cue->position) * clip->sfinfo->channels];
-        }
 
-    } else {
+            clip->position++;
 
-        // allocate empty read buffer for
-        // copying data off the ringbuffer.
-        readbuf = calloc(
-            clip->sfinfo->channels,
-            sizeof(jack_default_audio_sample_t*));
-
-        // read each frame off the ringbuffer,
-        // and put it into the output buffer.
-        for (i = 0; i < nframes; i++) {
-            size_t read_count = jack_ringbuffer_read(
-                clip->ringbuf,
-                (void*)readbuf,
-                FRAME_SIZE);
-
-            // if there was nothing left to read, stop the clip.
-            if (read_count == 0 && clip->play_state == CLIP_PLAY) {
-                clip->play_state = CLIP_STOP;
-                return 0;
+            if (clip->position > cue->position + cue->length) {
+                clip->cue = -1;
             }
 
-            // advance playback position
-            clip->position += read_count / FRAME_SIZE;
+        } else {
 
-            // actually set output buffer
-            output_buffers[0][i] = readbuf[0]; 
+            // allocate empty read buffer for
+            // copying data off the ringbuffer.
+            readbuf = calloc(
+                clip->sfinfo->channels,
+                sizeof(jack_default_audio_sample_t*));
+
+            // read each frame off the ringbuffer,
+            // and put it into the output buffer.
+            for (i = 0; i < nframes; i++) {
+                size_t read_count = jack_ringbuffer_read(
+                    clip->ringbuf,
+                    (void*)readbuf,
+                    FRAME_SIZE);
+
+                // if there was nothing left to read, stop the clip.
+                if (read_count == 0 && clip->play_state == CLIP_PLAY) {
+                    clip->play_state = CLIP_STOP;
+                    return 0;
+                }
+
+                // advance playback position
+                clip->position += read_count / FRAME_SIZE;
+
+                // actually set output buffer
+                output_buffers[0][i] = readbuf[0]; 
+            }
+
         }
 
     }
 
-    // tell the reader thread to read next chunk into ringbuffer
+    // if the reader thread is done, tell it to
+    // read the next chunks into the ringbuffer
     if (pthread_mutex_trylock(&clip->lock) == 0) {
         pthread_cond_signal(&clip->ready);
         pthread_mutex_unlock(&clip->lock);

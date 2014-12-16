@@ -31,20 +31,28 @@ static void * clip_read (void * arg) {
         // TODO: move to separate thread
 
         for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
+
             cue = clip->cues[i];
+
             if (cue != NULL && cue->buffer == NULL) {
+
                 cue->buffer = calloc(1, BUFFER_SIZE);
+
                 sf_seek(clip->sndfile, cue->position, SEEK_SET);
                 read_frames = sf_readf_float(clip->sndfile, cue->buffer, BUFFER_FRAMES);
                 sf_seek(clip->sndfile, -read_frames, SEEK_CUR);
+
+                cue->length = read_frames / clip->sfinfo->channels;
+
             }
+
         }
 
         // read next chunk of ringbuffer
 
-        jack_ringbuffer_get_write_vector(clip->ringbuf, write_vector);
-
         read_frames = 0;
+
+        jack_ringbuffer_get_write_vector(clip->ringbuf, write_vector);
 
         if (write_vector[0].len) {
 
@@ -108,14 +116,6 @@ clip_index_t clip_add(global_state_t * context,
         exit(1);
     }
 
-    MSG("%s: %d channels, %d kHz, %d frames, read %d, play %d",
-        clip->filename,
-        clip->sfinfo->channels,
-        clip->sfinfo->samplerate,
-        clip->sfinfo->frames,
-        clip->read_state,
-        clip->play_state);
-
     // initialize cues
     clip->cue  = -1;
     clip->cues = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
@@ -124,6 +124,16 @@ clip_index_t clip_add(global_state_t * context,
     // initialize ringbuffer
     clip->ringbuf = jack_ringbuffer_create(BUFFER_SIZE);
     memset(clip->ringbuf->buf, 0, clip->ringbuf->size);
+
+    // log clip info
+    MSG("%s: %d channels   %d kHz   %d frames   read %d   play %d   cue %d",
+        clip->filename,
+        clip->sfinfo->channels,
+        clip->sfinfo->samplerate,
+        clip->sfinfo->frames,
+        clip->read_state,
+        clip->play_state,
+        clip->cue);
 
     // initialize reader thread
     pthread_mutex_init(&clip->lock, NULL);
@@ -143,7 +153,7 @@ void clip_start(global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
 
-    clip->cue        = cue_index;
+    clip_cue_jump(clip, cue_index);
     clip->play_state = CLIP_PLAY;
 
     /*if (clip->play_state == CLIP_PLAY) {*/

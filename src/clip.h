@@ -25,6 +25,7 @@ typedef int clip_index_t;
 
 typedef struct CuePoint {
     jack_nframes_t                position;
+    sf_count_t                    length;
     jack_default_audio_sample_t * buffer;
 } cue_point_t;
 
