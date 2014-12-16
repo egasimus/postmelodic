@@ -19,12 +19,23 @@ typedef enum {
     CLIP_PLAY,
 } clip_play_state_t;
 
+typedef int cue_index_t;
+
 typedef int clip_index_t;
+
+typedef struct CuePoint {
+    jack_nframes_t      position;
+    jack_ringbuffer_t * buffer;
+} cue_point_t;
 
 typedef struct AudioClip {
     const char        * filename;
     SNDFILE           * sndfile;
     SF_INFO           * sfinfo;
+
+    cue_point_t      ** cues;
+    cue_index_t         cue;
+    cue_index_t         next_cue;
 
     jack_ringbuffer_t * ringbuf;
     jack_nframes_t      position;
@@ -39,8 +50,15 @@ typedef struct AudioClip {
 clip_index_t clip_add(global_state_t * context,
                       const char     * filename);
 
+void clip_cue_add(audio_clip_t * clip,
+                  cue_index_t    index,
+                  jack_nframes_t position);
+
+void clip_cue_jump(audio_clip_t * clip,
+                   cue_index_t    index);
+
 void clip_start(global_state_t * context,
-                clip_index_t     index,
-                jack_nframes_t   position);
+                clip_index_t     clip_index,
+                cue_index_t      cue_index);
 
 #endif

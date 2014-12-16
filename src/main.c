@@ -22,7 +22,9 @@ main (int    argc,
 
     osc_start(context);
 
-    clip_add(context, filename);
+    audio_clip_t * clip = context->clips[clip_add(context, filename)];
+
+    clip_cue_add(clip, 1, 18914);
 
     /*printf("Press <ENTER> key to start playing...");*/
     /*getchar();*/

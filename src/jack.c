@@ -11,16 +11,15 @@
 static int process_callback (jack_nframes_t   nframes,
                              void           * arg) {
 
-    global_state_t               * context = (global_state_t*) arg;
-    audio_clip_t                 * clip    = context->clips[0];
+    global_state_t * context = (global_state_t*) arg;
+    audio_clip_t   * clip    = context->clips[0];
 
     jack_default_audio_sample_t  * readbuf;
     jack_default_audio_sample_t ** output_buffers =
         calloc(1, sizeof(jack_default_audio_sample_t*));
 
-    jack_nframes_t                 i;
-    jack_nframes_t                 j;
-
+    jack_nframes_t i;
+    jack_nframes_t j;
 
     // get output buffer
     output_buffers[0] = jack_port_get_buffer(

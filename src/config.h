@@ -4,7 +4,9 @@
 #define DEBUG 1
 
 #define INITIAL_CLIP_SLOTS 32
+#define INITIAL_CUE_SLOTS  32
 
 #define RINGBUFFER_SIZE (1<<16)
+
 
 #endif

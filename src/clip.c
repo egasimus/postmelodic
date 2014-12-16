@@ -54,11 +54,37 @@ static void * clip_read (void * arg) {
 
 }
 
+void clip_cue_add(audio_clip_t * clip,
+                  cue_index_t    index,
+                  jack_nframes_t position) {
+
+    cue_point_t * cue = calloc(1, sizeof(cue_point_t));
+
+    cue->position = position;
+    cue->buffer   = jack_ringbuffer_create(
+            sizeof(jack_default_audio_sample_t) * RINGBUFFER_SIZE);
+
+    memset(cue->buffer->buf, 0, cue->buffer->size);
+
+    clip->cues[index] = cue;
+
+}
+
+void clip_cue_jump(audio_clip_t * clip,
+                   cue_index_t    index) {
+
+    clip->cue      = index;
+    clip->ringbuf  = clip->cues[index]->buffer;
+    clip->position = clip->cues[index]->position;
+
+}
+
 clip_index_t clip_add(global_state_t * context,
                       const char     * filename) {
 
     audio_clip_t * clip = calloc(1, sizeof(audio_clip_t));
-    
+
+    clip->filename   = filename;
     clip->read_state = CLIP_READ_INIT;
     clip->play_state = CLIP_STOP;
     clip->sfinfo     = calloc(1, sizeof(SF_INFO));
@@ -69,8 +95,6 @@ clip_index_t clip_add(global_state_t * context,
         exit(1);
     }
 
-    clip->filename = filename;
-
     MSG("%s: %d channels, %d kHz, %d frames, read %d, play %d",
         clip->filename,
         clip->sfinfo->channels,
@@ -79,10 +103,11 @@ clip_index_t clip_add(global_state_t * context,
         clip->read_state,
         clip->play_state);
 
-    // initialize ringbuffer
-    clip->ringbuf = jack_ringbuffer_create(
-        sizeof(jack_default_audio_sample_t) * RINGBUFFER_SIZE);
-    memset(clip->ringbuf->buf, 0, clip->ringbuf->size);
+    // initialize cues and ringbuffer
+    clip->next_cue = -1;
+    clip->cues     = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
+    clip_cue_add(clip, 0, 0);
+    clip_cue_jump(clip, 0);
 
     // initialize reader thread
     pthread_mutex_init(&clip->lock, NULL);
@@ -97,12 +122,16 @@ clip_index_t clip_add(global_state_t * context,
 }
 
 void clip_start(global_state_t * context,
-                clip_index_t     index,
-                jack_nframes_t   position) {
+                clip_index_t     clip_index,
+                cue_index_t      cue_index) {
 
-    sf_seek(context->clips[index]->sndfile, position, SEEK_SET);
-    context->clips[index]->read_state = CLIP_READ_STARTED;
-    context->clips[index]->position   = position;
-    context->clips[index]->play_state = CLIP_PLAY;
+    audio_clip_t * clip = context->clips[clip_index];
+
+    if (clip->play_state == CLIP_PLAY) {
+        clip->next_cue = cue_index;
+    } else {
+        clip_cue_jump(clip, cue_index);
+        clip->play_state = CLIP_PLAY;
+    }
 
 }
