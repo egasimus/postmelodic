@@ -41,7 +41,7 @@ static int on_cue (const char  * path,
 
     global_state_t * context = (global_state_t *) user_data;
 
-    clip_cue_add(
+    clip_cue_set(
         context->clips[argv[0]->h],
         argv[1]->h,
         argv[2]->h);

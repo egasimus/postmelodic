@@ -36,6 +36,9 @@ typedef struct AudioClip {
 
     cue_point_t      ** cues;
     cue_index_t         cue;
+    pthread_mutex_t     cue_lock;
+    SNDFILE           * cue_sndfile;
+    SF_INFO           * cue_sfinfo;
 
     jack_ringbuffer_t * ringbuf;
     jack_nframes_t      position;
@@ -50,7 +53,7 @@ typedef struct AudioClip {
 clip_index_t clip_add(global_state_t * context,
                       const char     * filename);
 
-void clip_cue_add(audio_clip_t * clip,
+void clip_cue_set(audio_clip_t * clip,
                   cue_index_t    index,
                   jack_nframes_t position);
 

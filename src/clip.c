@@ -9,6 +9,42 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void * clip_read_cues (void * arg) {
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+    audio_clip_t * clip = (audio_clip_t*) arg;
+    cue_index_t    i;
+    cue_point_t  * cue;
+    sf_count_t     read_frames;
+
+    while (1) {
+
+        // makes sure the loop runs once when thread is started,
+        // then blocks until clip_cue_set unlocks the mutex
+        pthread_mutex_lock(&clip->cue_lock);
+
+        for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
+
+            cue = clip->cues[i];
+
+            if (cue != NULL && cue->buffer == NULL) {
+
+                cue->buffer = calloc(1, BUFFER_SIZE);
+
+                sf_seek(clip->cue_sndfile, cue->position, SEEK_SET);
+                read_frames = sf_readf_float(clip->cue_sndfile, cue->buffer, BUFFER_FRAMES);
+
+                cue->length = read_frames / clip->sfinfo->channels;
+
+            }
+
+        }
+
+    }
+
+}
+
 static void * clip_read (void * arg) {
 
     audio_clip_t * clip = (audio_clip_t*) arg;
@@ -28,47 +64,35 @@ static void * clip_read (void * arg) {
 
     while (1) {
 
-        // populate any new cue buffers
-        // TODO: move to separate thread
-
-        for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
-
-            cue = clip->cues[i];
-
-            if (cue != NULL && cue->buffer == NULL) {
-
-                cue->buffer = calloc(1, BUFFER_SIZE);
-
-                sf_seek(clip->sndfile, cue->position, SEEK_SET);
-                read_frames = sf_readf_float(clip->sndfile, cue->buffer, BUFFER_FRAMES);
-                sf_seek(clip->sndfile, -read_frames, SEEK_CUR);
-
-                cue->length = read_frames / clip->sfinfo->channels;
-
-            }
-
-        }
-
         // read next chunk of data into the ringbuffer.
         // if the jack process_callback is currently reading
-        // from a cuepoint buffer, preload the data that comes
-        // after its end into the ringbuffer.
+        // from a cuepoint buffer, preload the data after
+        // the cue buffer's end into the ringbuffer.
         if (clip->cue > -1) {
             if (cued == 0) {
 
                 cued = 1;
 
+                // at this point jack callback should be
+                // reading from cue buffer, so it's safe
+                // to reset the ringbuffer in the meantime
                 jack_ringbuffer_reset(clip->ringbuf);
 
+                // seek file to first frame after end of
+                // cue buffer data, so that the ringbuffer
+                // continues from where the cue buffer left off
                 cue = clip->cues[clip->cue];
-                sf_seek(
-                    clip->sndfile,
-                    cue->position + cue->length,
-                    SEEK_SET);
+                sf_seek(clip->sndfile,
+                        cue->position + cue->length,
+                        SEEK_SET);
 
             }
         } else cued = 0;
 
+        // see if there's some free space for writing in the ringbuffer
+        // a bit of the ringbuffer is made writable every time the jack
+        // callback consumes its data; the entire ringbuffer is emptied
+        // as soon as the callback starts reading from a cue buffer.
         jack_ringbuffer_get_write_vector(clip->ringbuf, write_vector);
 
         read_frames = 0;
@@ -86,16 +110,23 @@ static void * clip_read (void * arg) {
 
         if (read_frames > 0) {
 
+            // if we've read some data from the file, write it
+            // into the ringbuffer, advance the write pointer,
+            // and let the callback know we've read some data.
             jack_ringbuffer_write_advance(clip->ringbuf, read_frames * bytes_per_frame);
 
             clip->read_state = CLIP_READ_STARTED;
 
         } else {
 
+            // on the other hand, if there was no data left to
+            // read in the file, then we're done for now.
             clip->read_state = CLIP_READ_DONE;
 
         }
 
+        // and then we wait for the jack callback
+        // to consume some data from the ringbuffer
         pthread_cond_wait(&clip->ready, &clip->lock);
 
     }
@@ -103,9 +134,9 @@ static void * clip_read (void * arg) {
 
 }
 
-void clip_cue_add(audio_clip_t * clip,
-                  cue_index_t    index,
-                  jack_nframes_t position) {
+void clip_cue_set (audio_clip_t * clip,
+                   cue_index_t    index,
+                   jack_nframes_t position) {
 
     cue_point_t * cue = calloc(1, sizeof(cue_point_t));
 
@@ -114,26 +145,32 @@ void clip_cue_add(audio_clip_t * clip,
 
     clip->cues[index] = cue;
 
+    pthread_mutex_unlock(&clip->cue_lock);
+
+    MSG("cue %d %d %d", clip, index, position);
+
 }
 
-void clip_cue_jump(audio_clip_t * clip,
-                   cue_index_t    index) {
+void clip_cue_jump (audio_clip_t * clip,
+                    cue_index_t    index) {
 
     clip->position = clip->cues[index]->position;
     clip->cue      = index;
 
 }
 
-clip_index_t clip_add(global_state_t * context,
-                      const char     * filename) {
+clip_index_t clip_add (global_state_t * context,
+                       const char     * filename) {
 
     audio_clip_t * clip = calloc(1, sizeof(audio_clip_t));
 
-    clip->filename   = filename;
-    clip->read_state = CLIP_READ_INIT;
-    clip->play_state = CLIP_STOP;
-    clip->sfinfo     = calloc(1, sizeof(SF_INFO));
-    clip->sndfile    = sf_open(filename, SFM_READ, clip->sfinfo);
+    clip->filename    = filename;
+    clip->read_state  = CLIP_READ_INIT;
+    clip->play_state  = CLIP_STOP;
+    clip->sfinfo      = calloc(1, sizeof(SF_INFO));
+    clip->sndfile     = sf_open(filename, SFM_READ, clip->sfinfo);
+    clip->cue_sfinfo  = calloc(1, sizeof(SF_INFO));
+    clip->cue_sndfile = sf_open(filename, SFM_READ, clip->cue_sfinfo);
 
     if (clip->sndfile == NULL) {
         FATAL("Could not open %s", filename);
@@ -143,7 +180,7 @@ clip_index_t clip_add(global_state_t * context,
     // initialize cues
     clip->cue  = -1;
     clip->cues = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
-    clip_cue_add(clip, 0, 0);
+    clip_cue_set(clip, 0, 0);
 
     // initialize ringbuffer
     clip->ringbuf = jack_ringbuffer_create(BUFFER_SIZE);
@@ -159,7 +196,11 @@ clip_index_t clip_add(global_state_t * context,
         clip->play_state,
         clip->cue);
 
-    // initialize reader thread
+    // initialize cue reader thread
+    pthread_mutex_init(&clip->cue_lock, NULL);
+    pthread_create(&clip->thread, NULL, clip_read_cues, clip);
+
+    // initialize ringbuffer reader thread
     pthread_mutex_init(&clip->lock, NULL);
     pthread_cond_init(&clip->ready, NULL);
     pthread_create(&clip->thread, NULL, clip_read, clip);
@@ -171,9 +212,9 @@ clip_index_t clip_add(global_state_t * context,
 
 }
 
-void clip_start(global_state_t * context,
-                clip_index_t     clip_index,
-                cue_index_t      cue_index) {
+void clip_start (global_state_t * context,
+                 clip_index_t     clip_index,
+                 cue_index_t      cue_index) {
 
     audio_clip_t * clip = context->clips[clip_index];
 
