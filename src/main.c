@@ -12,31 +12,28 @@
 int main (int    argc,
           char * argv []) {
 
-    char path[1024];
+    char sample_path [1024];
 
-    if (getcwd(path, sizeof(path)) != NULL) {
-        MSG("Current working dir: %s", path);
+    if (argv[1] == NULL) FATAL("No sample path specified.");
+    
+    realpath(argv[1], sample_path);
+    
+    if (access(sample_path, R_OK) != -1) {
+        MSG("Loading sample %s", sample_path);
     } else {
-        FATAL("No working directory.");
+        FATAL("Sample %s does not exist or is not readable.", sample_path);
     }
-
-    strcat(path, "/");
-    strcat(path, argv[1]);
 
     global_state_t * context = calloc(1, sizeof(global_state_t));
 
     context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
     context->n_clips = 0;
-    
+
     jack_start(context);
 
     osc_start(context);
-
-    if (argv[1] == NULL) {
-        MSG("No sample path specified.");
-    } else {
-        audio_clip_t * clip = context->clips[clip_add(context, path)];
-    }
+    
+    audio_clip_t * clip = context->clips[clip_add(context, sample_path)];
 
     while (1) usleep(10000);
 
