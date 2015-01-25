@@ -37,19 +37,6 @@ static int process_callback (jack_nframes_t   nframes,
         clip->read_state == CLIP_READ_INIT ||
         clip->play_state == CLIP_STOP) return 0;
 
-    // okay, so there's a clip playing. log state
-    // TODO: remove this io call from callback
-    MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
-         clip->filename,
-         clip->sfinfo->channels,
-         clip->sfinfo->samplerate,
-         clip->position,
-         clip->sfinfo->frames,
-         clip->read_state,
-         clip->play_state,
-         clip->cue,
-         (clip->cue > -1) ? "cued" : "ring");
-
     // fill output buffer with frames
     // from either cue or ring buffer
     for (i = 0; i < nframes; i++) {

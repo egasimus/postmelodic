@@ -63,6 +63,13 @@ void osc_start (global_state_t * context) {
 }
 
 
+char * osc_get_url (global_state_t * context) {
+
+    return lo_server_get_url(context->osc_server);
+
+}
+
+
 void osc_end (global_state_t * context) {
 
     lo_server_thread_free(context->osc_server);

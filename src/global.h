@@ -3,6 +3,7 @@
 
 #include <jack/jack.h>
 #include <lo/lo.h>
+#include <pthread.h>
 
 typedef struct AudioClip audio_clip_t;
 
@@ -15,7 +16,7 @@ typedef struct GlobalState {
     jack_port_t      ** output_ports;
 
     lo_server_thread    osc_server;
-    
+
 } global_state_t;
 
 #define SAMPLE_SIZE (sizeof (jack_default_audio_sample_t))

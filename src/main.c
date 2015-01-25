@@ -30,16 +30,35 @@ int main (int    argc,
     context->n_clips = 0;
 
     jack_start(context);
-
     osc_start(context);
     
     audio_clip_t * clip = context->clips[clip_add(context, sample_path)];
 
-    while (1) usleep(10000);
+    while (1) {
 
-    jack_end(context);
+      if (!(clip == NULL ||
+            clip->read_state == CLIP_READ_INIT ||
+            clip->play_state == CLIP_STOP)) {
+
+        MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
+             clip->filename,
+             clip->sfinfo->channels,
+             clip->sfinfo->samplerate,
+             clip->position,
+             clip->sfinfo->frames,
+             clip->read_state,
+             clip->play_state,
+             clip->cue,
+             (clip->cue > -1) ? "cued" : "ring");
+
+      }
+
+      usleep(100000);
+
+    }
 
     osc_end(context);
+    jack_end(context);
 
     free(context->clips);
     free(context);
