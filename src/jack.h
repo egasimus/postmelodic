@@ -5,7 +5,8 @@
 
 #include <jack/jack.h>
 
-void jack_start (global_state_t * context);
+void jack_start (global_state_t * context,
+                 char           * client_name);
 
 void jack_end (global_state_t * context);
 

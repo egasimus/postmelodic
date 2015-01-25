@@ -97,13 +97,14 @@ static int process_callback (jack_nframes_t   nframes,
     return 0;
 }
 
-void jack_start (global_state_t * context) {
+void jack_start (global_state_t * context,
+                 char           * client_name) {
 
     jack_status_t status = 0;
 
     // try to connect
     context->jack_client = jack_client_open(
-        "foo",
+        client_name,
         JackNullOption | JackNoStartServer,
         &status);
 
@@ -123,7 +124,7 @@ void jack_start (global_state_t * context) {
     // open outputs
     context->output_ports    = calloc(1, sizeof(jack_port_t*)); 
     context->output_ports[0] = jack_port_register(context->jack_client,
-                                                  "foo",
+                                                  "output",
                                                   JACK_DEFAULT_AUDIO_TYPE,
                                                   JackPortIsOutput,
                                                   0);

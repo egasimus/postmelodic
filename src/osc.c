@@ -49,9 +49,10 @@ static int on_cue (const char  * path,
 }
 
 
-void osc_start (global_state_t * context) {
+void osc_start (global_state_t * context,
+                char           * port_number) {
 
-    context->osc_server = lo_server_thread_new("7770", on_error);
+    context->osc_server = lo_server_thread_new(port_number, on_error);
 
     lo_server_thread_add_method(context->osc_server, "/play", "hh", on_play, context);
     lo_server_thread_add_method(context->osc_server, "/cue", "hhh", on_cue, context);

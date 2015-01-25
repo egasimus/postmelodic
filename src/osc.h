@@ -4,7 +4,8 @@
 #include "debug.h"
 #include "global.h"
 
-void osc_start (global_state_t * context);
+void osc_start (global_state_t * context,
+                char           * port_number);
 
 char * osc_get_url (global_state_t * context);
 

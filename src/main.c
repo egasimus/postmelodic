@@ -8,15 +8,45 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 int main (int    argc,
           char * argv []) {
 
-    char sample_path [1024];
+    char sample_path [1025];
+    char client_name [257] = "Postmelodic";
+    char port_number [6]   = "\0";
+    int opt;
 
-    if (argv[1] == NULL) FATAL("No sample path specified.");
+    // parse command line
+    opterr = 0;
+    while ((opt = getopt (argc, argv, "n:p:")) != -1) {
+
+        switch (opt) {
+            case 'n':
+                strncpy(client_name, optarg, 256);
+                break;
+            case 'p':
+                strncpy(port_number, optarg, 5);
+                MSG("Requested OSC control port: %s", port_number);
+                break;
+            case '?':
+                if (optopt == 'c') {
+                    MSG("Option '-%c' requires an argument.", optopt);
+                } else if (isprint(optopt)) {
+                    MSG("Unknown option '-%c'.", optopt);
+                } else {
+                    MSG("Unknown option character '\\x%x'.", optopt);
+                } 
+        }
+
+    }
+
+    MSG("Requested JACK client name: %s", client_name);
+
+    if (argv[optind] == NULL) FATAL("No sample path specified.");
     
-    realpath(argv[1], sample_path);
+    realpath(argv[optind], sample_path);
     
     if (access(sample_path, R_OK) != -1) {
         MSG("Loading sample %s", sample_path);
@@ -29,8 +59,8 @@ int main (int    argc,
     context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
     context->n_clips = 0;
 
-    jack_start(context);
-    osc_start(context);
+    jack_start(context, client_name);
+    osc_start(context, port_number);
     
     audio_clip_t * clip = context->clips[clip_add(context, sample_path)];
 
