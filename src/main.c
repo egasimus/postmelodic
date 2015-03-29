@@ -15,12 +15,13 @@ int main (int    argc,
 
     char sample_path [1025];
     char client_name [257] = "Postmelodic";
+    char connect_to  [257] = "\0";
     char port_number [6]   = "\0";
-    int opt;
+    int  opt;
 
     // parse command line
     opterr = 0;
-    while ((opt = getopt (argc, argv, "n:p:")) != -1) {
+    while ((opt = getopt (argc, argv, "n:p:c:")) != -1) {
 
         switch (opt) {
             case 'n':
@@ -30,10 +31,11 @@ int main (int    argc,
                 strncpy(port_number, optarg, 5);
                 MSG("Requested OSC control port: %s", port_number);
                 break;
+            case 'c':
+                strncpy(connect_to, optarg, 256);
+                MSG("Will try to connect to: %s", connect_to);
             case '?':
-                if (optopt == 'c') {
-                    MSG("Option '-%c' requires an argument.", optopt);
-                } else if (isprint(optopt)) {
+                if (isprint(optopt)) {
                     MSG("Unknown option '-%c'.", optopt);
                 } else {
                     MSG("Unknown option character '\\x%x'.", optopt);
@@ -59,7 +61,7 @@ int main (int    argc,
     context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
     context->n_clips = 0;
 
-    jack_start(context, client_name);
+    jack_start(context, client_name, connect_to);
     osc_start(context, port_number);
     
     audio_clip_t * clip = context->clips[clip_add(context, sample_path)];

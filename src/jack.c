@@ -98,11 +98,12 @@ static int process_callback (jack_nframes_t   nframes,
 }
 
 void jack_start (global_state_t * context,
-                 char           * client_name) {
+                 char           * client_name,
+                 char           * connect_to) {
 
     jack_status_t status = 0;
 
-    // try to connect
+    // try to open client
     context->jack_client = jack_client_open(
         client_name,
         JackNullOption | JackNoStartServer,
@@ -136,6 +137,15 @@ void jack_start (global_state_t * context,
     if (jack_activate(context->jack_client)) {
         FATAL("Can't activate client :(");
         exit(1);
+    }
+
+    // connect to target client
+    if (connect_to != NULL) {
+      MSG("Trying to connect to: %s", connect_to);
+      jack_connect(
+        context->jack_client,
+        jack_port_name(context->output_ports[0]),
+        connect_to);
     }
 
 }
