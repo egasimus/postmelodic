@@ -82,7 +82,8 @@ int main (int    argc,
 
     struct sigaction act;
     act.sa_handler = alright_stop;
-    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGINT,  &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
     
     audio_clip_t * clip = context->clips[clip_add(context, sample_path)];
 
