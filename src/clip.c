@@ -222,3 +222,12 @@ void clip_start (global_state_t * context,
     clip->play_state = CLIP_PLAY;
 
 }
+
+
+void clip_stop (global_state_t * context,
+                clip_index_t     clip_index) {
+
+    audio_clip_t * clip = context->clips[clip_index];
+    clip->play_state = CLIP_STOP;
+
+}

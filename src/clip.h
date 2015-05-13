@@ -50,18 +50,21 @@ typedef struct AudioClip {
     pthread_cond_t      ready;
 } audio_clip_t;
 
-clip_index_t clip_add(global_state_t * context,
-                      const char     * filename);
+clip_index_t clip_add (global_state_t * context,
+                       const char     * filename);
 
-void clip_cue_set(audio_clip_t * clip,
-                  cue_index_t    index,
-                  jack_nframes_t position);
+void clip_cue_set (audio_clip_t * clip,
+                   cue_index_t    index,
+                   jack_nframes_t position);
 
-void clip_cue_jump(audio_clip_t * clip,
-                   cue_index_t    index);
+void clip_cue_jump (audio_clip_t * clip,
+                    cue_index_t    index);
 
-void clip_start(global_state_t * context,
-                clip_index_t     clip_index,
-                cue_index_t      cue_index);
+void clip_start (global_state_t * context,
+                 clip_index_t     clip_index,
+                 cue_index_t      cue_index);
+
+void clip_stop (global_state_t * context,
+                clip_index_t     clip_index);
 
 #endif

@@ -49,13 +49,30 @@ static int on_cue (const char  * path,
 }
 
 
+static int on_stop (const char  * path,
+                    const char  * types,
+                    lo_arg     ** argv,
+                    int           argc,
+                    void        * data,
+                    void        * user_data) {
+
+    global_state_t * context = (global_state_t *) user_data;
+
+    clip_stop(
+        context,
+        argv[0]->h);
+
+}
+
+
 void osc_start (global_state_t * context,
                 char           * port_number) {
 
     context->osc_server = lo_server_thread_new(port_number, on_error);
 
-    lo_server_thread_add_method(context->osc_server, "/play", "hh", on_play, context);
-    lo_server_thread_add_method(context->osc_server, "/cue", "hhh", on_cue, context);
+    lo_server_thread_add_method(context->osc_server, "/play", "hh",  on_play, context);
+    lo_server_thread_add_method(context->osc_server, "/cue",  "hhh", on_cue,  context);
+    lo_server_thread_add_method(context->osc_server, "/stop", "h",   on_stop, context);
 
     lo_server_thread_start(context->osc_server);
 
