@@ -140,7 +140,7 @@ void jack_start (global_state_t * context,
     }
 
     // connect to target client
-    if (connect_to != NULL) {
+    if (connect_to[0] != '\0') {
       MSG("Trying to connect to: %s", connect_to);
       jack_connect(
         context->jack_client,

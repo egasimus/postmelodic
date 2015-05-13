@@ -5,10 +5,23 @@
 #include "jack.h"
 #include "osc.h"
 
+#include <ctype.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <ctype.h>
+
+global_state_t * context;
+
+void alright_stop (int s) {
+    osc_end(context);
+    jack_end(context);
+
+    free(context->clips);
+    free(context);
+
+    exit(s);
+}
 
 int main (int    argc,
           char * argv []) {
@@ -18,10 +31,11 @@ int main (int    argc,
     char connect_to  [257] = "\0";
     char port_number [6]   = "\0";
     int  opt;
+    int  verbose           = 0;
 
     // parse command line
     opterr = 0;
-    while ((opt = getopt (argc, argv, "n:p:c:")) != -1) {
+    while ((opt = getopt (argc, argv, "n:p:c:v")) != -1) {
 
         switch (opt) {
             case 'n':
@@ -34,6 +48,9 @@ int main (int    argc,
             case 'c':
                 strncpy(connect_to, optarg, 256);
                 MSG("Will try to connect to: %s", connect_to);
+            case 'v':
+                verbose = 1;
+                MSG("Verbose mode on");
             case '?':
                 if (isprint(optopt)) {
                     MSG("Unknown option '-%c'.", optopt);
@@ -56,21 +73,25 @@ int main (int    argc,
         FATAL("Sample %s does not exist or is not readable.", sample_path);
     }
 
-    global_state_t * context = calloc(1, sizeof(global_state_t));
-
+    context          = calloc(1, sizeof(global_state_t));
     context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
     context->n_clips = 0;
 
     jack_start(context, client_name, connect_to);
     osc_start(context, port_number);
+
+    struct sigaction act;
+    act.sa_handler = alright_stop;
+    sigaction(SIGINT, &act, NULL);
     
     audio_clip_t * clip = context->clips[clip_add(context, sample_path)];
 
     while (1) {
 
-      if (!(clip == NULL ||
+      if (verbose &&
+          !(clip == NULL                       ||
             clip->read_state == CLIP_READ_INIT ||
-            clip->play_state == CLIP_STOP)) {
+            clip->play_state == CLIP_STOP      )) {
 
         MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
              clip->filename,
@@ -85,13 +106,9 @@ int main (int    argc,
 
       }
 
-      usleep(100000);
+      usleep(UPDATE_EVERY);
 
     }
 
-    osc_end(context);
-    jack_end(context);
-
-    free(context->clips);
-    free(context);
+    alright_stop(0);
 }

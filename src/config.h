@@ -8,4 +8,6 @@
 
 #define BUFFER_FRAMES (1<<14)
 
+#define UPDATE_EVERY 100000
+
 #endif
