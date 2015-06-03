@@ -12,7 +12,7 @@ static int process_callback (jack_nframes_t   nframes,
                              void           * arg) {
 
     global_state_t * context = (global_state_t*) arg;
-    audio_clip_t   * clip    = context->clips[0];
+    audio_clip_t   * clip    = context->now_playing;
 
     jack_default_audio_sample_t  * readbuf;
     jack_default_audio_sample_t ** output_buffers =

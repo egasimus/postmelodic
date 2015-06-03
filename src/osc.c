@@ -15,6 +15,25 @@ static void on_error (int num,
 }
 
 
+static int on_load (const char  * path,
+                    const char  * types,
+                    lo_arg     ** argv,
+                    int           argc,
+                    void        * data,
+                    void        * user_data) {
+
+    global_state_t * context = (global_state_t *) user_data;
+
+    MSG("Load %s in slot %d", &argv[1]->s, argv[0]->h);
+
+    clip_load(
+        context,
+        argv[0]->h,
+        &argv[1]->s);
+
+}
+
+
 static int on_play (const char  * path,
                     const char  * types,
                     lo_arg     ** argv,
@@ -70,9 +89,10 @@ void osc_start (global_state_t * context,
 
     context->osc_server = lo_server_thread_new(port_number, on_error);
 
-    lo_server_thread_add_method(context->osc_server, "/play", "hh",  on_play, context);
-    lo_server_thread_add_method(context->osc_server, "/cue",  "hhh", on_cue,  context);
-    lo_server_thread_add_method(context->osc_server, "/stop", "h",   on_stop, context);
+    lo_server_thread_add_method(context->osc_server, "/load", "is",  on_load, context);
+    lo_server_thread_add_method(context->osc_server, "/play", "ii",  on_play, context);
+    lo_server_thread_add_method(context->osc_server, "/cue",  "iii", on_cue,  context);
+    lo_server_thread_add_method(context->osc_server, "/stop", "i",   on_stop, context);
 
     lo_server_thread_start(context->osc_server);
 

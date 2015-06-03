@@ -8,6 +8,7 @@
 #include <sndfile.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static void * clip_read_cues (void * arg) {
 
@@ -159,12 +160,20 @@ void clip_cue_jump (audio_clip_t * clip,
 
 }
 
-clip_index_t clip_add (global_state_t * context,
-                       const char     * filename) {
+clip_index_t clip_load (global_state_t * context,
+                        clip_index_t     index,
+                        const char     * filename) {
+
+    char sample_path [1025];
+    realpath(filename, sample_path);
+    if (access(sample_path, R_OK) != -1) {
+        MSG("Loading sample %s into slot %d", sample_path, index);
+    } else {
+        FATAL("Sample %s does not exist or is not readable.", sample_path);
+    }
 
     audio_clip_t * clip = calloc(1, sizeof(audio_clip_t));
-
-    clip->filename    = filename;
+    clip->filename    = sample_path;
     clip->read_state  = CLIP_READ_INIT;
     clip->play_state  = CLIP_STOP;
     clip->sfinfo      = calloc(1, sizeof(SF_INFO));
@@ -206,7 +215,7 @@ clip_index_t clip_add (global_state_t * context,
     pthread_create(&clip->thread, NULL, clip_read, clip);
 
     // add clip to global list of clips
-    context->clips[0] = clip;
+    context->clips[index] = clip;
 
     return 0;
 
@@ -218,6 +227,7 @@ void clip_start (global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
 
+    context->now_playing = clip;
     clip_cue_jump(clip, cue_index);
     clip->play_state = CLIP_PLAY;
 

@@ -26,7 +26,6 @@ void alright_stop (int s) {
 int main (int    argc,
           char * argv []) {
 
-    char sample_path [1025];
     char client_name [257] = "Postmelodic";
     char connect_to  [257] = "\0";
     char port_number [6]   = "\0";
@@ -63,16 +62,6 @@ int main (int    argc,
 
     MSG("Requested JACK client name: %s", client_name);
 
-    if (argv[optind] == NULL) FATAL("No sample path specified.");
-    
-    realpath(argv[optind], sample_path);
-    
-    if (access(sample_path, R_OK) != -1) {
-        MSG("Loading sample %s", sample_path);
-    } else {
-        FATAL("Sample %s does not exist or is not readable.", sample_path);
-    }
-
     context          = calloc(1, sizeof(global_state_t));
     context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
     context->n_clips = 0;
@@ -85,27 +74,32 @@ int main (int    argc,
     sigaction(SIGINT,  &act, NULL);
     sigaction(SIGTERM, &act, NULL);
     
-    audio_clip_t * clip = context->clips[clip_add(context, sample_path)];
+    if (argv[optind] == NULL) {
+      WARN("No samples loaded specified on command line.");
+      WARN("Expecting `/load [index] [path]`");
+    } else {
+      clip_load(context, 0, argv[optind]);
+    }
 
     while (1) {
 
-      if (verbose &&
-          !(clip == NULL                       ||
-            clip->read_state == CLIP_READ_INIT ||
-            clip->play_state == CLIP_STOP      )) {
+      /*if (verbose &&*/
+          /*!(clip == NULL                       ||*/
+            /*clip->read_state == CLIP_READ_INIT ||*/
+            /*clip->play_state == CLIP_STOP      )) {*/
 
-        MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
-             clip->filename,
-             clip->sfinfo->channels,
-             clip->sfinfo->samplerate,
-             clip->position,
-             clip->sfinfo->frames,
-             clip->read_state,
-             clip->play_state,
-             clip->cue,
-             (clip->cue > -1) ? "cued" : "ring");
+        /*MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",*/
+             /*clip->filename,*/
+             /*clip->sfinfo->channels,*/
+             /*clip->sfinfo->samplerate,*/
+             /*clip->position,*/
+             /*clip->sfinfo->frames,*/
+             /*clip->read_state,*/
+             /*clip->play_state,*/
+             /*clip->cue,*/
+             /*(clip->cue > -1) ? "cued" : "ring");*/
 
-      }
+      /*}*/
 
       usleep(UPDATE_EVERY);
 

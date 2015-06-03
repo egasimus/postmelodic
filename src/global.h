@@ -11,6 +11,7 @@ typedef struct GlobalState {
 
     audio_clip_t     ** clips;
     unsigned int        n_clips;
+    audio_clip_t      * now_playing;
 
     jack_client_t     * jack_client;
     jack_port_t      ** output_ports;
