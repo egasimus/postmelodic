@@ -15,72 +15,44 @@ static void on_error (int num,
 }
 
 
-static int on_load (const char  * path,
-                    const char  * types,
-                    lo_arg     ** argv,
-                    int           argc,
-                    void        * data,
-                    void        * user_data) {
-
-    global_state_t * context = (global_state_t *) user_data;
-
-    MSG("Load %s in slot %d", &argv[1]->s, argv[0]->h);
-
+OSC_CALLBACK (on_load)
+    MSG("Load %s in slot %d", &argv[1]->s, argv[0]->i);
     clip_load(
         context,
-        argv[0]->h,
+        argv[0]->i,
         &argv[1]->s);
-
 }
 
 
-static int on_play (const char  * path,
-                    const char  * types,
-                    lo_arg     ** argv,
-                    int           argc,
-                    void        * data,
-                    void        * user_data) {
-
-    global_state_t * context = (global_state_t *) user_data;
-
+OSC_CALLBACK (on_play)
     clip_start(
         context,
-        argv[0]->h,
-        argv[1]->h);
-
+        argv[0]->i,
+        argv[1]->i);
 }
 
 
-static int on_cue (const char  * path,
-                   const char  * types,
-                   lo_arg     ** argv,
-                   int           argc,
-                   void        * data,
-                   void        * user_data) {
-
-    global_state_t * context = (global_state_t *) user_data;
-
+OSC_CALLBACK (on_cue)
     clip_cue_set(
-        context->clips[argv[0]->h],
-        argv[1]->h,
-        argv[2]->h);
-
+        context->clips[argv[0]->i],
+        argv[1]->i,
+        argv[2]->i);
 }
 
 
-static int on_stop (const char  * path,
-                    const char  * types,
-                    lo_arg     ** argv,
-                    int           argc,
-                    void        * data,
-                    void        * user_data) {
-
-    global_state_t * context = (global_state_t *) user_data;
-
+OSC_CALLBACK (on_stop)
     clip_stop(
         context,
-        argv[0]->h);
+        argv[0]->i);
+}
 
+
+OSC_CALLBACK (on_listen)
+    if (argc == 1) {
+      context->listen_address = lo_address_new_from_url(&argv[0]->s);
+    } else if (argc == 2) {
+      context->listen_address = lo_address_new(&argv[0]->s, &argv[1]->s);
+    }
 }
 
 
@@ -89,10 +61,12 @@ void osc_start (global_state_t * context,
 
     context->osc_server = lo_server_thread_new(port_number, on_error);
 
-    lo_server_thread_add_method(context->osc_server, "/load", "is",  on_load, context);
-    lo_server_thread_add_method(context->osc_server, "/play", "ii",  on_play, context);
-    lo_server_thread_add_method(context->osc_server, "/cue",  "iii", on_cue,  context);
-    lo_server_thread_add_method(context->osc_server, "/stop", "i",   on_stop, context);
+    OSC_METHOD("/load",   "is",  on_load);
+    OSC_METHOD("/play",   "ii",  on_play);
+    OSC_METHOD("/cue",    "iii", on_cue);
+    OSC_METHOD("/stop",   "i",   on_stop);
+    OSC_METHOD("/listen", "ss",  on_listen);
+    OSC_METHOD("/listen", "s",   on_listen);
 
     lo_server_thread_start(context->osc_server);
 

@@ -3,9 +3,7 @@
 #include "debug.h"
 #include "global.h"
 
-#include <jack/ringbuffer.h>
-#include <pthread.h>
-#include <sndfile.h>
+#include <lo/lo.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -226,7 +224,6 @@ void clip_start (global_state_t * context,
                  cue_index_t      cue_index) {
 
     audio_clip_t * clip = context->clips[clip_index];
-
     context->now_playing = clip;
     clip_cue_jump(clip, cue_index);
     clip->play_state = CLIP_PLAY;
@@ -239,5 +236,6 @@ void clip_stop (global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
     clip->play_state = CLIP_STOP;
+    lo_send(context->listen_address, "/stopped", "i", clip_index);
 
 }

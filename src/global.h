@@ -9,14 +9,15 @@ typedef struct AudioClip audio_clip_t;
 
 typedef struct GlobalState {
 
-    audio_clip_t     ** clips;
-    unsigned int        n_clips;
-    audio_clip_t      * now_playing;
+    audio_clip_t  ** clips;
+    unsigned int     n_clips;
+    audio_clip_t   * now_playing;
 
-    jack_client_t     * jack_client;
-    jack_port_t      ** output_ports;
+    jack_client_t  * jack_client;
+    jack_port_t   ** output_ports;
 
-    lo_server_thread    osc_server;
+    lo_server_thread osc_server;
+    lo_address       listen_address;
 
 } global_state_t;
 
