@@ -160,6 +160,11 @@ void clip_cue_jump (audio_clip_t * clip,
 
 static void * clip_osc_notify (void * arg) {
 
+    // sending osc notifications that playback has reached its end
+    // separately from the jack process callback where it happens
+    // since lo_send blocks and can therefore cause xruns galore.
+    // thanks to @falktx for helping me make this work.
+
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
     context_and_clip_t *    args = (context_and_clip_t *) arg;
@@ -176,8 +181,8 @@ static void * clip_osc_notify (void * arg) {
 
         if (context->listen_address) {
             int err = lo_send(
-                context->listen_address, "/stopped", "i", 1);
-            MSG("-> %d %d %d", context->listen_address, index, err);
+                context->listen_address, "/stopped", "is", 1, context->osc_port
+            );
         }
 
     }

@@ -53,7 +53,8 @@ OSC_CALLBACK (on_listen)
     } else if (argc == 1) {
       context->listen_address = lo_address_new_from_url(&argv[0]->s);
     } else if (argc == 0) {
-      context->listen_address = lo_message_get_source(msg);
+      context->listen_address = lo_address_new_from_url(
+          lo_address_get_url(lo_message_get_source(msg)));
     }
 }
 
