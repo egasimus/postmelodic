@@ -11,8 +11,9 @@
 static int process_callback (jack_nframes_t   nframes,
                              void           * arg) {
 
-    global_state_t * context = (global_state_t*) arg;
-    audio_clip_t   * clip    = context->now_playing;
+    global_state_t * context    = (global_state_t*) arg;
+    clip_index_t     clip_index = context->now_playing;
+    audio_clip_t   * clip       = context->clips[clip_index];
 
     jack_default_audio_sample_t  * readbuf;
     jack_default_audio_sample_t ** output_buffers =
@@ -73,7 +74,7 @@ static int process_callback (jack_nframes_t   nframes,
 
             // if there was nothing left to read, stop the clip.
             if (read_count == 0 && clip->play_state == CLIP_PLAY) {
-                clip->play_state = CLIP_STOP;
+                clip_stop(context, clip_index);
                 return 0;
             }
 

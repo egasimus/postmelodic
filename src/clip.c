@@ -8,42 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 
-static void * clip_read_cues (void * arg) {
-
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-    audio_clip_t * clip = (audio_clip_t*) arg;
-    cue_index_t    i;
-    cue_point_t  * cue;
-    sf_count_t     read_frames;
-
-    while (1) {
-
-        // makes sure the loop runs once when thread is started,
-        // then blocks until clip_cue_set unlocks the mutex
-        pthread_mutex_lock(&clip->cue_lock);
-
-        for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
-
-            cue = clip->cues[i];
-
-            if (cue != NULL && cue->buffer == NULL) {
-
-                cue->buffer = calloc(1, BUFFER_SIZE);
-
-                sf_seek(clip->cue_sndfile, cue->position, SEEK_SET);
-                read_frames = sf_readf_float(clip->cue_sndfile, cue->buffer, BUFFER_FRAMES);
-
-                cue->length = read_frames / clip->sfinfo->channels;
-
-            }
-
-        }
-
-    }
-
-}
-
 static void * clip_read (void * arg) {
 
     audio_clip_t * clip = (audio_clip_t*) arg;
@@ -130,6 +94,42 @@ static void * clip_read (void * arg) {
 
     }
 
+}
+
+static void * clip_read_cues (void * arg) {
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+    audio_clip_t * clip = (audio_clip_t*) arg;
+    cue_index_t    i;
+    cue_point_t  * cue;
+    sf_count_t     read_frames;
+
+    // the loop runs once when the thread is started,
+    // then blocks until clip_cue_set unlocks the mutex
+
+    while (1) {
+
+        pthread_mutex_lock(&clip->cue_lock);
+
+        for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
+
+            cue = clip->cues[i];
+
+            if (cue != NULL && cue->buffer == NULL) {
+
+                cue->buffer = calloc(1, BUFFER_SIZE);
+
+                sf_seek(clip->cue_sndfile, cue->position, SEEK_SET);
+                read_frames = sf_readf_float(clip->cue_sndfile, cue->buffer, BUFFER_FRAMES);
+
+                cue->length = read_frames / clip->sfinfo->channels;
+
+            }
+
+        }
+
+    }
 
 }
 
@@ -155,6 +155,32 @@ void clip_cue_jump (audio_clip_t * clip,
 
     clip->position = clip->cues[index]->position;
     clip->cue      = index;
+
+}
+
+static void * clip_osc_notify (void * arg) {
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+    context_and_clip_t *    args = (context_and_clip_t *) arg;
+    global_state_t     * context = args->context;
+    clip_index_t           index = args->clip_index;
+    audio_clip_t       *    clip = context->clips[index];
+
+    // mutex starts locked. when unlocked (by jack process callback),
+    // thread sends a "/stopped" notification and locks itself again
+
+    while (1) {
+
+        pthread_mutex_lock(&clip->osc_lock);
+
+        if (context->listen_address) {
+            int err = lo_send(
+                context->listen_address, "/stopped", "i", 1);
+            MSG("-> %d %d %d", context->listen_address, index, err);
+        }
+
+    }
 
 }
 
@@ -205,7 +231,7 @@ clip_index_t clip_load (global_state_t * context,
 
     // initialize cue reader thread
     pthread_mutex_init(&clip->cue_lock, NULL);
-    pthread_create(&clip->thread, NULL, clip_read_cues, clip);
+    pthread_create(&clip->cue_thread, NULL, clip_read_cues, clip);
 
     // initialize ringbuffer reader thread
     pthread_mutex_init(&clip->lock, NULL);
@@ -214,6 +240,12 @@ clip_index_t clip_load (global_state_t * context,
 
     // add clip to global list of clips
     context->clips[index] = clip;
+
+    // initialize osc notification thread
+    pthread_mutex_init(&clip->osc_lock, NULL);
+    context_and_clip_t arg = { context, index };
+    pthread_create(&clip->osc_thread, NULL, clip_osc_notify, &arg);
+    pthread_mutex_lock(&clip->osc_lock);
 
     return 0;
 
@@ -224,7 +256,7 @@ void clip_start (global_state_t * context,
                  cue_index_t      cue_index) {
 
     audio_clip_t * clip = context->clips[clip_index];
-    context->now_playing = clip;
+    context->now_playing = clip_index;
     clip_cue_jump(clip, cue_index);
     clip->play_state = CLIP_PLAY;
 
@@ -236,8 +268,6 @@ void clip_stop (global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
     clip->play_state = CLIP_STOP;
-    if (context->listen_address) {
-        lo_send(context->listen_address, "/stopped", "i", clip_index);
-    }
+    pthread_mutex_unlock(&clip->osc_lock);
 
 }

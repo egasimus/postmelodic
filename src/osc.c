@@ -62,6 +62,7 @@ void osc_start (global_state_t * context,
                 char           * port_number) {
 
     context->osc_server = lo_server_thread_new(port_number, on_error);
+    context->osc_port   = port_number;
 
     OSC_METHOD("/load",   "is",  on_load);
     OSC_METHOD("/play",   "ii",  on_play);

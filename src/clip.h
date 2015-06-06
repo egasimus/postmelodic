@@ -1,12 +1,12 @@
 #ifndef _CLIP_H_
 #define _CLIP_H_
 
-#include "global.h"
-
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
 #include <pthread.h>
 #include <sndfile.h>
+
+typedef struct GlobalState global_state_t;
 
 typedef enum {
     CLIP_READ_INIT = 0,
@@ -30,15 +30,10 @@ typedef struct CuePoint {
 } cue_point_t;
 
 typedef struct AudioClip {
+
     const char        * filename;
     SNDFILE           * sndfile;
     SF_INFO           * sfinfo;
-
-    cue_point_t      ** cues;
-    cue_index_t         cue;
-    pthread_mutex_t     cue_lock;
-    SNDFILE           * cue_sndfile;
-    SF_INFO           * cue_sfinfo;
 
     jack_ringbuffer_t * ringbuf;
     jack_nframes_t      position;
@@ -48,7 +43,25 @@ typedef struct AudioClip {
     pthread_t           thread;
     pthread_mutex_t     lock;
     pthread_cond_t      ready;
+
+    cue_point_t      ** cues;
+    cue_index_t         cue;
+    pthread_t           cue_thread;
+    pthread_mutex_t     cue_lock;
+    SNDFILE           * cue_sndfile;
+    SF_INFO           * cue_sfinfo;
+
+    pthread_t           osc_thread;
+    pthread_mutex_t     osc_lock;
+
 } audio_clip_t;
+
+typedef struct ContextAndClip {
+
+    global_state_t * context;
+    clip_index_t     clip_index;
+
+} context_and_clip_t;
 
 clip_index_t clip_load (global_state_t * context,
                         clip_index_t     index,

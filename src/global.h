@@ -1,6 +1,8 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#include "clip.h"
+
 #include <jack/jack.h>
 #include <lo/lo.h>
 #include <pthread.h>
@@ -11,11 +13,12 @@ typedef struct GlobalState {
 
     audio_clip_t  ** clips;
     unsigned int     n_clips;
-    audio_clip_t   * now_playing;
+    clip_index_t     now_playing;
 
     jack_client_t  * jack_client;
     jack_port_t   ** output_ports;
 
+    char           * osc_port;
     lo_server_thread osc_server;
     lo_address       listen_address;
 
