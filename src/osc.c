@@ -48,10 +48,12 @@ OSC_CALLBACK (on_stop)
 
 
 OSC_CALLBACK (on_listen)
-    if (argc == 1) {
-      context->listen_address = lo_address_new_from_url(&argv[0]->s);
-    } else if (argc == 2) {
+    if (argc == 2) {
       context->listen_address = lo_address_new(&argv[0]->s, &argv[1]->s);
+    } else if (argc == 1) {
+      context->listen_address = lo_address_new_from_url(&argv[0]->s);
+    } else if (argc == 0) {
+      context->listen_address = lo_message_get_source(msg);
     }
 }
 
@@ -67,6 +69,7 @@ void osc_start (global_state_t * context,
     OSC_METHOD("/stop",   "i",   on_stop);
     OSC_METHOD("/listen", "ss",  on_listen);
     OSC_METHOD("/listen", "s",   on_listen);
+    OSC_METHOD("/listen", "",    on_listen);
 
     lo_server_thread_start(context->osc_server);
 

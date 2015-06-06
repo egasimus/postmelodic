@@ -15,11 +15,11 @@ void osc_end (global_state_t * context);
     lo_server_thread_add_method(context->osc_server, a, b, c, context)
 
 #define OSC_CALLBACK(name) \
-  static int name (const char  * path,      \
-                   const char  * types,     \
-                   lo_arg     ** argv,      \
-                   int           argc,      \
-                   void        * data,      \
+  static int name (const char  * path,        \
+                   const char  * types,       \
+                   lo_arg     ** argv,        \
+                   int           argc,        \
+                   lo_message    msg,         \
                    void        * user_data) { \
     global_state_t * context = (global_state_t *) user_data;
 

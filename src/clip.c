@@ -236,6 +236,8 @@ void clip_stop (global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
     clip->play_state = CLIP_STOP;
-    lo_send(context->listen_address, "/stopped", "i", clip_index);
+    if (context->listen_address) {
+        lo_send(context->listen_address, "/stopped", "i", clip_index);
+    }
 
 }
