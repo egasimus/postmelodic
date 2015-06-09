@@ -112,7 +112,7 @@ static void * clip_read_cues (void * arg) {
 
         pthread_mutex_lock(&clip->cue_lock);
 
-        for (i = 0; i < INITIAL_CUE_SLOTS; i++) {
+        for (i = 0; i < CUE_SLOTS; i++) {
 
             cue = clip->cues[i];
 
@@ -217,7 +217,7 @@ clip_index_t clip_load (global_state_t * context,
 
     // initialize cues
     clip->cue  = -1;
-    clip->cues = calloc(INITIAL_CUE_SLOTS, sizeof(cue_point_t*));
+    clip->cues = calloc(CUE_SLOTS, sizeof(cue_point_t*));
     clip_cue_set(clip, 0, 0);
 
     // initialize ringbuffer
@@ -273,6 +273,7 @@ void clip_stop (global_state_t * context,
 
     audio_clip_t * clip = context->clips[clip_index];
     clip->play_state = CLIP_STOP;
+    context->now_playing = -1;
     pthread_mutex_unlock(&clip->osc_lock);
 
 }

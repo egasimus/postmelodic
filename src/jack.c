@@ -32,6 +32,9 @@ static int process_callback (jack_nframes_t   nframes,
         output_buffers[0][i] = 0;
     }
 
+    // give up if there's nothing to play
+    if (clip_index == -1) return 0;
+
     // do nothing if the clip does not exist,
     // if it is stopped, or if it is not ready
     if (clip == NULL ||

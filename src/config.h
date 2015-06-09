@@ -3,8 +3,8 @@
 
 #define DEBUG 1
 
-#define INITIAL_CLIP_SLOTS 32
-#define INITIAL_CUE_SLOTS  32
+#define CLIP_SLOTS 32
+#define CUE_SLOTS  32
 
 #define BUFFER_FRAMES (1<<14)
 

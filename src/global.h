@@ -12,7 +12,6 @@ typedef struct AudioClip audio_clip_t;
 typedef struct GlobalState {
 
     audio_clip_t  ** clips;
-    unsigned int     n_clips;
     clip_index_t     now_playing;
 
     jack_client_t  * jack_client;

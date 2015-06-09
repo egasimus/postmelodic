@@ -62,9 +62,9 @@ int main (int    argc,
 
     MSG("Requested JACK client name: %s", client_name);
 
-    context          = calloc(1, sizeof(global_state_t));
-    context->clips   = calloc(INITIAL_CLIP_SLOTS, sizeof(audio_clip_t));
-    context->n_clips = 0;
+    context              = calloc(1, sizeof(global_state_t));
+    context->clips       = calloc(CLIP_SLOTS, sizeof(audio_clip_t));
+    context->now_playing = -1;
 
     jack_start(context, client_name, connect_to);
     osc_start(context, port_number);
@@ -83,27 +83,35 @@ int main (int    argc,
 
     while (1) {
 
-      /*if (verbose &&*/
-          /*!(clip == NULL                       ||*/
-            /*clip->read_state == CLIP_READ_INIT ||*/
-            /*clip->play_state == CLIP_STOP      )) {*/
+      if (context->listen_address != NULL && context->now_playing != -1) {
 
-        /*MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",*/
-             /*clip->filename,*/
-             /*clip->sfinfo->channels,*/
-             /*clip->sfinfo->samplerate,*/
-             /*clip->position,*/
-             /*clip->sfinfo->frames,*/
-             /*clip->read_state,*/
-             /*clip->play_state,*/
-             /*clip->cue,*/
-             /*(clip->cue > -1) ? "cued" : "ring");*/
+          audio_clip_t * clip = context->clips[context->now_playing];
 
-      /*}*/
+          if (context->listen_address != NULL) {
+              lo_send(context->listen_address,  "/playing", "ihhs",
+                  context->now_playing, clip->position, clip->sfinfo->frames,
+                  context->osc_port);
+          }
+
+          if (verbose == 1 && !(clip->read_state == CLIP_READ_INIT || clip->play_state == CLIP_STOP)) {
+              MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",
+                   clip->filename,
+                   clip->sfinfo->channels,
+                   clip->sfinfo->samplerate,
+                   clip->position,
+                   clip->sfinfo->frames,
+                   clip->read_state,
+                   clip->play_state,
+                   clip->cue,
+                   (clip->cue > -1) ? "cuebuffer" : "ringbuffer");
+          }
+
+      }
 
       usleep(UPDATE_EVERY);
 
     }
 
     alright_stop(0);
+
 }

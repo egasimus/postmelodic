@@ -56,6 +56,7 @@ OSC_CALLBACK (on_listen)
       context->listen_address = lo_address_new_from_url(
           lo_address_get_url(lo_message_get_source(msg)));
     }
+    MSG("Listening on %s", lo_address_get_url(context->listen_address));
 }
 
 
