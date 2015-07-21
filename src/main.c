@@ -79,19 +79,22 @@ int main (int    argc,
       WARN("Expecting `/load [index] [path]`");
     } else {
       clip_load(context, 0, argv[optind]);
+      audio_clip_t * clip = context->clips[0];
+      OSC_NOTIFY("/loaded", "sisiii",
+          context->osc_port,
+          0, clip->filename, clip->sfinfo->channels,
+          clip->sfinfo->frames, clip->sfinfo->samplerate);
     }
 
     while (1) {
 
-      if (context->listen_address != NULL && context->now_playing != -1) {
+      if (context->now_playing != -1) {
 
           audio_clip_t * clip = context->clips[context->now_playing];
 
-          if (context->listen_address != NULL) {
-              lo_send(context->listen_address,  "/playing", "ihhs",
-                  context->now_playing, clip->position, clip->sfinfo->frames,
-                  context->osc_port);
-          }
+          OSC_NOTIFY("/playing", "siii",
+              context->osc_port, context->now_playing,
+              clip->position, clip->sfinfo->frames);
 
           if (verbose == 1 && !(clip->read_state == CLIP_READ_INIT || clip->play_state == CLIP_STOP)) {
               MSG("%s: %d channels   %d kHz   %d/%d frames   read %d   play %d   cue %d   %s",

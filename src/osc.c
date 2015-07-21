@@ -21,6 +21,12 @@ OSC_CALLBACK (on_load)
         context,
         argv[0]->i,
         &argv[1]->s);
+
+    audio_clip_t * clip = context->clips[argv[0]->i];
+    OSC_NOTIFY("/loaded", "sisiii",
+        context->osc_port,
+        argv[0]->i, clip->filename, clip->sfinfo->channels,
+        clip->sfinfo->frames, clip->sfinfo->samplerate);
 }
 
 

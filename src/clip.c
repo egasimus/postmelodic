@@ -2,6 +2,7 @@
 #include "config.h"
 #include "debug.h"
 #include "global.h"
+#include "osc.h"
 
 #include <lo/lo.h>
 #include <stdlib.h>
@@ -179,11 +180,7 @@ static void * clip_osc_notify (void * arg) {
 
         pthread_mutex_lock(&clip->osc_lock);
 
-        if (context->listen_address) {
-            int err = lo_send(
-                context->listen_address, "/stopped", "is", 1, context->osc_port
-            );
-        }
+        OSC_NOTIFY("/stopped", "si", context->osc_port, index);
 
     }
 
