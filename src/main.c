@@ -75,7 +75,7 @@ int main (int    argc,
     sigaction(SIGTERM, &act, NULL);
     
     if (argv[optind] == NULL) {
-      WARN("No samples loaded specified on command line.");
+      WARN("No samples loaded from command line.");
       WARN("Expecting `/load [index] [path]`");
     } else {
       clip_load(context, 0, argv[optind]);
