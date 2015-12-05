@@ -1,6 +1,6 @@
 # Postmelodic
 
-JACK+OSC sound player thingy with cuepoints.
+JACK+OSC sound player thingy with cuepoints and memory leaks.
 
 ## Command line
 
